@@ -1,1 +1,3 @@
-Python module for computation based on low-rank and sparse matrices
+
+
+# This is a collection of numpy algorithms for non-convex optimisation
