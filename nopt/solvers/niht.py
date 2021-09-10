@@ -1,8 +1,8 @@
-
+import time
+import numpy as np
 
 from nopt.solvers.solver import Solver
 
-import numpy as np
 
 class NIHT(Solver):
 
@@ -10,13 +10,13 @@ class NIHT(Solver):
         super().__init__(*args, **kwargs)
         pass
 
-    def compute_stepsize(self, gradient, subspace, A, constraint):
+    def _compute_stepsize(self, gradient, subspace, A, constraint):
         gradient_proj = constraint.project_subspace(gradient, subspace)
         a = np.linalg.norm(gradient_proj)**2
         b = np.linalg.norm(A(gradient_proj))**2
         return a/b
 
-    def compute_initial_guess(self, A, b, constraint):
+    def _compute_initial_guess(self, A, b, constraint):
         w = A.adjoint(b)
         T_k, x = constraint.project(w)
         return (T_k, x)
@@ -47,37 +47,45 @@ class NIHT(Solver):
 
         # Check the problem is LinearLeastSquares type
         constraint = problem.constraint
+        objective = problem.objective
         A = problem.A
         b = problem.b
+        verbosity = problem.verbosity
 
         if x is None:
-            subspace, x = self.compute_initial_guess(A, b, constraint)
+            subspace, x = self._compute_initial_guess(A, b, constraint)
         else:
             subspace, _ = constraint.project(x)
 
-        #self._start_optlog(extraiterfields=['gradnorm'],
-        #                   solverparams={'linesearcher': linesearch})
+        if verbosity >= 2:
+            print(" iter\t\t   obj. value\t    grad. norm")
 
+        self._start_optlog()
+        stop_reason = None
         iter = 0
-        
-        print (iter)
+        time0 = time.time()
+
         while True:
             # Calculate new cost, grad and gradnorm
-            cost = problem.objective(x)
-            
-            print(cost)
-
+            objective_value = objective(x)
             iter = iter + 1
 
             grad = A.adjoint(A(x) - b)
-            alpha = self.compute_stepsize(grad, subspace, A, constraint)
+            gradnorm = np.linalg.norm(grad, 2)
+            alpha = self._compute_stepsize(grad, subspace, A, constraint)
             w = x - alpha * grad
             subspace, x = constraint.project(w)
 
 
-            #stop_reason = self._check_stopping_criterion(
-            #    time0, stepsize=stepsize, gradnorm=gradnorm, iter=iter)
-            stop_reason = False
+            if verbosity >= 2:
+                print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
+
+            if self._logverbosity >= 2:
+                self._append_optlog(iter, x, objective_value, gradnorm=gradnorm)
+
+            stop_reason = self._check_stopping_criterion(
+                time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
+
             if stop_reason:
                 if verbosity >= 1:
                     print(stop_reason)
@@ -89,6 +97,6 @@ class NIHT(Solver):
             return x
         else:
             self._stop_optlog(x, objective(x), stop_reason, time0,
-                              stepsize=stepsize, gradnorm=gradnorm,
+                              stepsize=alpha, gradnorm=gradnorm,
                               iter=iter)
             return x, self._optlog

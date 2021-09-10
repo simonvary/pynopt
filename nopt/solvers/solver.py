@@ -5,28 +5,35 @@ import time
 class Solver(metaclass=abc.ABCMeta):
     '''
     Abstract base class setting out template for solver classes.
+    Method list:
     '''
 
-    def __init__(self, maxtime=1000, maxiter=1000, minobjective=1e-8, minreldecrease=1-1e-5, mingradnorm=1e-6, minstepsize=1e-10,  maxcostevals=5000, logverbosity=0):
+    def __init__(self, maxtime=1000, maxiter=1000, minobjective_value=1e-8, minreldecrease=1-1e-3, mingradnorm=1e-8, minstepsize=1e-10,  maxcostevals=float('inf'), logverbosity=1):
         """
         Variable attributes (defaults in brackets):
             - maxtime (1000)
                 Max time (in seconds) to run.
             - maxiter (1000)
                 Max number of iterations to run.
-            - mingradnorm (1e-6)
+            - mingradnorm (1e-8)
                 Terminate if the norm of the gradient is below this.
             - minstepsize (1e-10)
                 Terminate if linesearch returns a vector whose norm is below
                 this.
-            - maxcostevals (5000)
+            - maxcostevals (Inf)
                 Maximum number of allowed cost evaluations
             - logverbosity (0)
                 Level of information logged by the solver while it operates,
                 0 is silent, 2 is most information.
         """
+
         self._maxtime = maxtime
         self._maxiter = maxiter
+        self._minobjective_value = minobjective_value
+        self._minreldecrease = minreldecrease
+        self._mingradnorm = mingradnorm
+        self._minstepsize = minstepsize
+        self._maxcostevals = maxcostevals
         self._logverbosity = logverbosity
         self._optlog = None
 
@@ -42,14 +49,18 @@ class Solver(metaclass=abc.ABCMeta):
         '''
         pass
 
-    def _check_stopping_criterion(self, time0, iter=-1, gradnorm=float('inf'),
-                                  stepsize=float('inf'), costevals=-1):
+    def _check_stopping_criterion(self, time0, iter=-1, objective_value=float('inf'), 
+                                    reldecrease = 1, gradnorm=float('inf'), 
+                                    stepsize=float('inf'), costevals=-1):
         reason = None
         if time.time() >= time0 + self._maxtime:
             reason = ("Terminated - max time reached after %d iterations."
                       % iter)
         elif iter >= self._maxiter:
             reason = ("Terminated - max iterations reached after "
+                      "%.2f seconds." % (time.time() - time0))
+        elif objective_value < self._minobjective_value:
+            reason = ("Terminated - target objective reached after "
                       "%.2f seconds." % (time.time() - time0))
         elif gradnorm < self._mingradnorm:
             reason = ("Terminated - min grad norm reached after %d "
