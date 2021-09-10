@@ -7,8 +7,7 @@ class Solver(metaclass=abc.ABCMeta):
     Abstract base class setting out template for solver classes.
     '''
 
-    def __init__(self, maxtime=1000, maxiter=1000, mingradnorm=1e-6,
-                 minstepsize=1e-10, maxcostevals=5000, logverbosity=0):
+    def __init__(self, maxtime=1000, maxiter=1000, minobjective=1e-8, minreldecrease=1-1e-5, mingradnorm=1e-6, minstepsize=1e-10,  maxcostevals=5000, logverbosity=0):
         """
         Variable attributes (defaults in brackets):
             - maxtime (1000)
