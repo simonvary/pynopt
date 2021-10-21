@@ -2,4 +2,4 @@
 
 # PyNopt
 
-This is a collection of numpy algorithms for non-convex optimisation.
+Implementation of popular fast non-convex solvers in numpy for inverse problems.

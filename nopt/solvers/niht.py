@@ -13,11 +13,11 @@ class NIHT(Solver):
     def _compute_stepsize(self, gradient, subspace, A, constraint):
         gradient_proj = constraint.project_subspace(gradient, subspace)
         a = np.linalg.norm(gradient_proj)**2
-        b = np.linalg.norm(A(gradient_proj))**2
+        b = np.linalg.norm(A.matvec(gradient_proj))**2
         return a/b
 
     def _compute_initial_guess(self, A, b, constraint):
-        w = A.adjoint(b)
+        w = A.rmatvec(b)
         T_k, x = constraint.project(w)
         return (T_k, x)
 
@@ -70,7 +70,7 @@ class NIHT(Solver):
             objective_value = objective(x)
             iter = iter + 1
 
-            grad = A.adjoint(A(x) - b)
+            grad = A.rmatvec(A.matvec(x) - b)
             gradnorm = np.linalg.norm(grad, 2)
             alpha = self._compute_stepsize(grad, subspace, A, constraint)
             w = x - alpha * grad
@@ -81,7 +81,7 @@ class NIHT(Solver):
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, x, objective_value, gradnorm=gradnorm)
+                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
 
             stop_reason = self._check_stopping_criterion(
                 time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)

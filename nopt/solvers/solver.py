@@ -92,22 +92,22 @@ class Solver(metaclass=abc.ABCMeta):
                             'solverparams': solverparams
                             }
         if self._logverbosity >= 2:
+            self._optlog['iterations'] = {'iteration': [], 
+                                            'time': [],
+                                            'fx': [],
+                                            'xdist': []}
             if extraiterfields:
-                self._optlog['iterations'] = {'iteration': [],
-                                              'time': [],
-                                              'x': [],
-                                              'f(x)': []}
                 for field in extraiterfields:
                     self._optlog['iterations'][field] = []
 
-    def _append_optlog(self, iteration, x, fx, **kwargs):
+    def _append_optlog(self, iteration, fx, xdist, **kwargs):
         # In case not every iteration is being logged
         self._optlog['iterations']['iteration'].append(iteration)
         self._optlog['iterations']['time'].append(time.time())
-        self._optlog['iterations']['x'].append(x)
-        self._optlog['iterations']['f(x)'].append(fx)
+        self._optlog['iterations']['fx'].append(fx)
+        self._optlog['iterations']['xdist'].append(xdist)
         for key in kwargs:
-            self._optlog['iterations'][key].append(kwargs[key])
+            del self._optlog['iterations']['xdist']
 
     def _stop_optlog(self, x, objective, stop_reason, time0,
                      stepsize=float('inf'), gradnorm=float('inf'),
@@ -116,6 +116,10 @@ class Solver(metaclass=abc.ABCMeta):
         self._optlog['final_values'] = {'x': x,
                                         'f(x)': objective,
                                         'time': time.time() - time0}
+        if self._optlog['iterations']['xdist'][0] == None:
+            None
+            # remove self._optlog['iterations']['xdist'][0]
+
         if stepsize != float('inf'):
             self._optlog['final_values']['stepsize'] = stepsize
         if gradnorm != float('inf'):

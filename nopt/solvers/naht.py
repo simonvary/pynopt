@@ -1,92 +1,106 @@
 import time
-from copy import deepcopy
+import numpy as np
 
-from nonopt.solvers.projectors import *
+from nopt.solvers.solver import Solver
 
-class lrpsNAHT(object):
+
+class NAHT(Solver):
+    """r
+    Normalized Alternating Hard Thresholding 
+    
     """
-    Normalized Alternating Hard Thresholding deSteepestscent (gradient descent) algorithm based on
-    steepestdescent.m from the manopt MATLAB package.
-    """
 
-    def __init__(self, linesearch=None, *args, **kwargs):
+    def __init__(self, linesearch='normalized', *args, **kwargs):
         super().__init__(*args, **kwargs)
+        pass
 
-        #if linesearch is None:
-        #    self._linesearch = LineSearchBackTracking()
-        #else:
-        #    self._linesearch = linesearch
-        #self.linesearch = None
+    def _compute_stepsize(self, gradient, subspace, A, constraint):
+        gradient_proj = constraint.project_subspace(gradient, subspace)
+        a = np.linalg.norm(gradient_proj)**2
+        b = np.linalg.norm(A.matvec(gradient_proj))**2
+        return a/b
 
-    # Function to solve optimisation problem using steepest descent.
+    def _compute_initial_guess(self, A, b, constraints):
+        w = A.rmatvec(b)
+        T_1, x1 = constraints[0].project(w)
+        T_2, x2 = constraints[1].project(w - x1) 
+        return [[T_1, T_2], [x1, x2]]
+
     def solve(self, problem, x=None):
         """
-        Perform optimization using gradient descent with linesearch.
-        This method first computes the gradient (derivative) of obj
-        w.r.t. arg, and then optimizes by moving in the direction of
-        steepest descent (which is the opposite direction to the gradient).
+        Normalized Alternating Hard Thresholding for a recovery of an additive combination of two nonconvex sets 
         Arguments:
             - problem
-                Pymanopt problem setup using the Problem class, this must
+                Nopt problem setup using the Problem class, this must
                 have a .manifold attribute specifying the manifold to optimize
                 over, as well as a cost and enough information to compute
                 the gradient of that cost.
             - x=None
                 Optional parameter. Starting point. If none
-                then a starting point will be randomly generated.
-            - reuselinesearch=False
-                Whether to reuse the previous linesearch object. Allows to
-                use information from a previous solve run.
+                then a starting point will be computed from A.rmatvec(b).
         Returns:
             - x
                 Local minimum of obj, or if algorithm terminated before
                 convergence x will be the point at which it terminated.
+            - optlog
         """
+
+        # Check the problem is LinearProblemSum type
+        constraints = problem.constraints
+        objective = problem.objective
         A = problem.A
+        b = problem.b
         verbosity = problem.verbosity
-        objective = problem.cost
-        gradient = problem.grad
 
-        if not reuselinesearch or self.linesearch is None:
-            self.linesearch = deepcopy(self._linesearch)
-        linesearch = self.linesearch
+        # x is now a tuple x = (x1, x2)
 
-        # If no starting point is specified, generate one at random.
         if x is None:
-            x = A.adj(y)
+            subspaces, x = self._compute_initial_guess(A, b, constraints)
+        else:
+            subspaces, _ = constraints.project(x) # broken now
 
-        # Initialize iteration counter and timer
+        if verbosity >= 2:
+            print(" iter\t\t   obj. value\t    grad. norm")
+
+        self._start_optlog()
+        stop_reason = None
         iter = 0
         time0 = time.time()
 
         if verbosity >= 2:
             print(" iter\t\t   cost val\t    grad. norm")
 
-        self._start_optlog(extraiterfields=['gradnorm'],
-                           solverparams={'linesearcher': linesearch})
-
         while True:
             # Calculate new cost, grad and gradnorm
-            cost = objective(x)
-            grad = gradient(x)
-            gradnorm = man.norm(x, grad)
+            objective_value = objective(x[0] + x[1])
             iter = iter + 1
 
+            # gradient step for the first component
+            grad = A.rmatvec(A.matvec(x[0] + x[1]) - b)
+            gradnorm = np.linalg.norm(grad, 2)
+            alpha = self._compute_stepsize(grad, subspaces[0], A, constraints[0])
+            v = x[0] - alpha * grad
+            temp_subspace, temp_x = constraints[0].project(v)
+            subspaces[0] = temp_subspace
+            x[0] = temp_x
+
+            # gradient step for the second component
+            grad = A.rmatvec(A.matvec(x[0] + x[1]) - b)
+            gradnorm = np.linalg.norm(grad, 2)
+            alpha = self._compute_stepsize(grad, subspaces[1], A, constraints[1])
+            w = x[1] - alpha * grad
+            temp_subspace, temp_x = constraints[1].project(w)
+            subspaces[1] = temp_subspace
+            x[1] = temp_x
+
             if verbosity >= 2:
-                print("%5d\t%+.16e\t%.8e" % (iter, cost, gradnorm))
+                print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, x, cost, gradnorm=gradnorm)
-
-            # Descent direction is minus the gradient
-            desc_dir = -grad
-
-            # Perform line-search
-            stepsize, x = linesearch.search(objective, man, x, desc_dir,
-                                            cost, -gradnorm**2)
+                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
 
             stop_reason = self._check_stopping_criterion(
-                time0, stepsize=stepsize, gradnorm=gradnorm, iter=iter)
+                time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
 
             if stop_reason:
                 if verbosity >= 1:
@@ -94,10 +108,11 @@ class lrpsNAHT(object):
                     print('')
                 break
 
+        
         if self._logverbosity <= 0:
             return x
         else:
-            self._stop_optlog(x, objective(x), stop_reason, time0,
-                              stepsize=stepsize, gradnorm=gradnorm,
+            self._stop_optlog(x[0] + x[1], objective(x[0] + x[1]), stop_reason, time0,
+                              stepsize=alpha, gradnorm=gradnorm,
                               iter=iter)
             return x, self._optlog

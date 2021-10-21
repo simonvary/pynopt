@@ -15,18 +15,18 @@ from nopt.constraints.constraint import Constraint
 
 class Rank(Constraint):
     """
-    Projections based on sparsity
+    Projections based on matrix rank
     """
 
-    def __init__(self, k):
-        self.k = k
+    def __init__(self, r):
+        self.r = r
 
-    def project(self, x, k=None):
+    def project(self, x, r=None):
         """
         Keep only k largest entries of x.
         Parameters
         ----------
-        x : numpy array
+        x : numpy 2D array
             Numpy array to be thresholded
         r : int
             Rank
@@ -34,17 +34,17 @@ class Rank(Constraint):
         -----
         This is hard thresholding, keeping k largest entries in absolute value
         """
-        if k is None:
-            k = self.k
-        _x = x.copy()
-        ind = np.argpartition(abs(x), -k, axis=None)[-k:]
-        ind = np.unravel_index(ind, _x.shape)
-        ind_del = np.ones(_x.shape, dtype=bool)
-        ind_del[ind] = False
-        _x[ind_del] = 0
-        return ind, _x
+        if r is None:
+            r = self.r
+        U, S, V = np.linalg.svd(x)
+        V = V.transpose()
+        S = np.diag(S[:r])    
+        U = U[:,:r]
+        V = V[:,:r]
+        return (U, V), np.matmul(U, np.matmul(S, V.transpose()))
 
-    def project_subspace(self, x, ind):
+
+    def project_subspace(self, x, subspaces):
         """
         Keeps only parameters at specified indices setting others to zero
         ----------
@@ -53,9 +53,18 @@ class Rank(Constraint):
         ind : int
             where to keep entries
         """
-        # Check if support is of size k ? 
-        _x = x.copy()
-        ind_del = np.ones(x.shape, dtype=bool)
-        ind_del[ind] = False
-        _x[ind_del] = 0
-        return x
+        U = subspaces[0]
+        V = subspaces[1]
+        return np.matmul(U, np.matmul(U.transpose(), x))
+
+    def project_subspace_right(self, x, subspaces):
+        """
+        Keeps only parameters at specified indices setting others to zero
+        ----------
+        x : numpy array
+            Numpy array to be projected
+        ind : int
+            where to keep entries
+        """
+        # missing implementation yet
+        return None
