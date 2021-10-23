@@ -14,22 +14,34 @@
 from nopt.transforms.transform import Transform
 
 import numpy as np
+import scipy.sparse as sp
+import scipy.fftpack as fftpack
+
 
 class FastJLT(Transform):
     """
     Linear transform based on a numpy array
     """
-    
+
+    def _generate(self, n, p):
+        R_ind = np.sort(np.random.choice(n, size=p, replace=False))
+        D = sp.diags(np.random.choice((1, -1), size = n))
+        return (R_ind, D)
+
     def __init__(self, shape_input, shape_output, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.R = None #sparse_identity with random p rows selected
-        self.D = None #sparse diagonal matrix with +-1
+        super().__init__(shape_input, shape_output, *args, **kwargs)
+        self.n = np.prod(shape_input)
+        self.p = np.prod(shape_output)
+        self.R_ind, self.D = self._generate(self.n, self.p)
 
     # Function to apply the transform.
     def matvec(self, x):
-        
-        return np.fft.rfft(x)
+        w = self.D.dot(fftpack.dct(x.flatten(), norm='ortho'))
+        return w[self.R_ind]
 
     # Function to apply adjoint/backward transform.
     def rmatvec(self, y):
-        return np.fft.irfft(y)
+        w = np.zeros(np.prod(self.shape_input))
+        w[self.R_ind] = y
+        return fftpack.idct(self.D.dot(w), norm='ortho').reshape(self.shape_input)
+        # still have to add the reshapes
