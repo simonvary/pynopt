@@ -15,6 +15,7 @@ import numpy as np
 class LinearMatrix(Transform):
     """
     Linear transform based on a numpy array
+    # should take the scipy LinearOpetator for inheritence
     """
     
     def __init__(self, matrix, *args, **kwargs):
@@ -29,10 +30,21 @@ class LinearMatrix(Transform):
     # Function to apply the transform.
     def matvec(self, x):
         # change x from the self.shape_input to a vector
-
         return np.matmul(self._matrix, x.flatten())
 
     # Function to apply adjoint/backward transform.
     def rmatvec(self, y):
         # change result from a vector to the self.shape_input 
         return np.matmul(self._matrix.transpose(), y).reshape(self.shape_input)
+
+    # Function to apply the transform.
+    def matmat(self, x):
+        # change x from the self.shape_input to a vector
+        # check that x is a matrix
+        return np.matmul(self._matrix, x)
+
+    # Function to apply adjoint/backward transform.
+    def rmatmat(self, y):
+        # change result from a vector to the self.shape_input 
+        # check that y is a matrix
+        return np.matmul(self._matrix.transpose(), y)

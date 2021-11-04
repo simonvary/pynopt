@@ -72,7 +72,7 @@ class NAHT(Solver):
 
         while True:
             # Calculate new cost, grad and gradnorm
-            objective_value = objective(x[0] + x[1])
+            # objective_value = objective(x[0] + x[1])
             iter = iter + 1
 
             # gradient step for the first component
@@ -92,6 +92,8 @@ class NAHT(Solver):
             temp_subspace, temp_x = constraints[1].project(w)
             subspaces[1] = temp_subspace
             x[1] = temp_x
+
+            objective_value = objective(x[0] + x[1])
 
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
