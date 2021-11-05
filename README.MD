@@ -10,3 +10,12 @@ This repository includes simple implementations for certain non-smooth, non-conv
 
 The main goal is to **stop rewritting the same projected gradient method** all over again and to have a **unified** treatment of linear operators, e.g. curvelets, and a set of quick tests to quickly assess efficiancy of the algorithms.
 
+Currently, there are the following solvers:
+- Normalized Iterative Hard Thresholding (LinearProblem)
+- Normalized Alternating Hard Thresholding (LinearProblemSum)
+- Oblique Sparse PCA (SparsePrincipalSubspace)
+
+Some things to keep in mind:
+- use the syntax close to scipy.sparse.linalg.LinearOperator for Transforms
+- use syntax close to the PyProximal for non-smooth proximal operators?
+- use syntax close to scikit.learn for solvers?
