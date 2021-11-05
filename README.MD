@@ -16,6 +16,8 @@ Currently, there are the following solvers:
 - Oblique Sparse PCA (SparsePrincipalSubspace)
 
 Some things to keep in mind:
-- use the syntax close to scipy.sparse.linalg.LinearOperator for Transforms
+- use the syntax close to scipy.sparse.linalg.LinearOperator for Transforms, allowing for
+    - implementation of scalable fast operators, e.g. FJLT, etc.
+    - readily availibility to use [curvelops](https://github.com/PyLops/curvelops), wavelets, etc.
 - use syntax close to the PyProximal for non-smooth proximal operators?
 - use syntax close to scikit.learn for solvers?
