@@ -25,13 +25,12 @@ class ObliqueSPCA(Solver):
         _, x0 = constraint.project_quasi(subspaces[1])
         return (x0)
 
-    def _take_step(self, x, alpha, direction, HTs, HTo):
-        w_new = x - alpha * direction
-        _, w_new_s = HTs.project(w_new)
-        x_new = HTo.project(w_new_s)
-        return(x_new)
+    def _take_step(self, x, alpha, direction, projection):
+        w_new = x + alpha * direction
+        subspace, x_new = projection(w_new)
+        return(subspace, x_new)
     
-    def solve(self, problem, x=None):
+    def solve(self, problem, lam=None, x=None):
         """
         Perform optimization using gradient descent with linesearch.
         This method first computes the gradient (derivative) of obj
@@ -51,13 +50,21 @@ class ObliqueSPCA(Solver):
                 convergence x will be the point at which it terminated.
         """
 
-        # Check the problem is LinearLeastSquares type
-        objective = problem.objective
         A = problem.A
         verbosity = problem.verbosity
         s = problem.sparsity
-        lam = problem.lam
+        r = problem.rank
+        n = np.prod(A.shape_input)
 
+        if lam is None:
+            lam = n / r
+        
+        regularizer = lambda x: .25*lam*np.linalg.norm(x.T @ x - np.eye(x.shape[1]),'fro')**2
+        regularizer_gradient = lambda x: lam * x @ (x.T @ x - np.eye(x.shape[1]))
+        
+        objective = lambda x: problem.objective(x) + regularizer(x)
+        gradient = lambda x: problem.gradient(x) + regularizer_gradient(x)
+        
         MAX_ITER_LSEARCH = 100;
 
         alpha_bar = 1
@@ -65,10 +72,6 @@ class ObliqueSPCA(Solver):
         beta = 1e-4
 
         HTso = SparseOblique(s)
-        #if x is None:
-            #subspace, x = self._compute_initial_guess(A, HTso)
-        #else:
-            #subspace, _ = constraint.project(x)
 
         objective_value = objective(x)
         if verbosity >= 2:
@@ -81,18 +84,15 @@ class ObliqueSPCA(Solver):
         #pdb.set_trace()
         while True:
             # Calculate new cost, grad and gradnorm
-            grad = problem.gradient(x)
+            grad = gradient(x)
             gradnorm = np.linalg.norm(grad, 2)
 
             alpha = alpha_bar
             # line-search loop
             iter_lsearch = 1
             while True:
-                w_new = x - alpha * grad
-                #_, w_new_s = HTs.project(w_new)
-                #x_new = HTo.project(w_new_s)
-                subspace, x_new = HTso.project_quasi(w_new)
-                
+                subspace, x_new = self._take_step(x, alpha, -grad, HTso.project_quasi)
+
                 s_new = x_new - x
                 objective_value_new = objective(x_new)
                 if objective_value - objective_value_new >= beta*( - np.dot(s_new.flatten(), grad.flatten())) or iter_lsearch > MAX_ITER_LSEARCH:

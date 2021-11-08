@@ -13,7 +13,7 @@ import numpy as np
 
 from nopt.constraints.constraint import Constraint
 
-class Rank(Constraint):
+class FixedRank(Constraint):
     """
     Projections based on matrix rank
     """

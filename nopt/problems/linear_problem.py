@@ -9,7 +9,7 @@ from nopt.problems.problem import Problem
 
 class LinearProblem(Problem):
     """
-    Problem class for setting up a problem to feed to one of the PyLAS solvers.
+    Problem class for setting up a problem to feed to one of the pynopt solvers.
     Attributes:
         - A
             A linear operator going from R^{m\times n} to R^p
@@ -42,3 +42,6 @@ class LinearProblem(Problem):
     def objective(self, x):
         # Least squares cost
         return .5*np.linalg.norm(self.A.matvec(x) - self.b, 2)**2
+
+    def gradient(self, x):
+        return(self.A.rmatvec(self.A.matvec(x) - self.b))

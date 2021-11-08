@@ -14,7 +14,7 @@ import numpy as np
 
 from nopt.constraints.constraint import Constraint
 
-class Sparse(Constraint):
+class Sparsity(Constraint):
     """
     Projections of tensors based on sparsity
     """

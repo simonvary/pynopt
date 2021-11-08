@@ -21,6 +21,11 @@ class NIHT(Solver):
         T_k, x = constraint.project(w)
         return (T_k, x)
 
+    def _take_step(self, x, alpha, direction, projection):
+        w = x + alpha * direction
+        subspace, x_new = projection(w)
+        return(subspace, x_new)
+
     def solve(self, problem, x=None):
         """
         Perform optimization using gradient descent with linesearch.
@@ -70,12 +75,13 @@ class NIHT(Solver):
             objective_value = objective(x)
             iter = iter + 1
 
-            grad = A.rmatvec(A.matvec(x) - b)
+            grad = problem.gradient(x)#A.rmatvec(A.matvec(x) - b)
             gradnorm = np.linalg.norm(grad, 2)
             alpha = self._compute_stepsize(grad, subspace, A, constraint)
-            w = x - alpha * grad
-            subspace, x = constraint.project(w)
-
+            
+            #w = x - alpha * grad
+            #subspace, x = constraint.project(w)
+            subspace, x = self._take_step(x, alpha, -grad, constraint.projection)
 
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
@@ -91,7 +97,6 @@ class NIHT(Solver):
                     print(stop_reason)
                     print('')
                 break
-
         
         if self._logverbosity <= 0:
             return x

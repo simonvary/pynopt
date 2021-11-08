@@ -22,18 +22,14 @@ class SparsePrincipalSubspace(Problem):
         - gradient
             Gradient of the cost in x
     """
-    def __init__(self, A, rank, sparsity, lam, *args, **kwargs):
+    def __init__(self, A, rank, sparsity, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.A = A
         self.sparsity = sparsity
         self.rank = rank
-        self.lam = lam # this lam should be part of the solver really
     
     def objective(self, x):
-        # Least squares cost where x is an n times r matrix 
-        return ( .5*np.linalg.norm(self.A._matrix, 'fro')**2 -.5*np.linalg.norm(self.A.matmat(x), 'fro')**2  
-                    + self.lam/4 * np.linalg.norm(x.T @ x - np.eye(x.shape[1]),'fro')**2)
+        return ( .5*np.linalg.norm(self.A._matrix, 'fro')**2 -.5*np.linalg.norm(self.A.matmat(x), 'fro')**2 )
 
     def gradient(self, x):
-        return ( -(self.A._matrix.T @ self.A._matrix) @ x  
-                    + self.lam * x @ (x.T @ x - np.eye(x.shape[1])) )
+        return ( ( -self.A._matrix.T @ self.A._matrix) @ x )

@@ -6,16 +6,16 @@ Routine listings
 
 """
 
-from nopt.transforms.transform import Transform
+import numpy as np
 
+from nopt.transforms.transform import Transform
 from scipy.sparse.linalg import LinearOperator 
 
-import numpy as np
 
 class LinearMatrix(Transform):
     """
     Linear transform based on a numpy array
-    # should take the scipy LinearOpetator for inheritence
+    # should take the scipy LinearOperator for inheritence
     """
     
     def __init__(self, matrix, *args, **kwargs):
