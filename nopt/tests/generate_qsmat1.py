@@ -1,6 +1,6 @@
 import numpy as np
 
-from nopt.constraints.sparse import Sparse
+from nopt.constraints import Sparsity
 
 
 def GenerateQSMat1(size, sparsity, tol = 1e-16, MAX_ITER = 20):
@@ -15,7 +15,7 @@ def GenerateQSMat1(size, sparsity, tol = 1e-16, MAX_ITER = 20):
     """
     tol = 1e-16
     q0 = np.random.normal(0, 1, (size[0], size[1]))
-    HTs = Sparse(sparsity)
+    HTs = Sparsity(sparsity)
 
     delta = 1
     iter = 1

@@ -38,11 +38,20 @@ class Sparsity(Constraint):
         if k is None:
             k = self.k
         _x = x.copy()
-        ind = np.argpartition(np.abs(x), -k, axis=None)[-k:]
-        ind = np.unravel_index(ind, _x.shape)
-        ind_del = np.ones(_x.shape, dtype=bool)
-        ind_del[ind] = False
-        _x[ind_del] = 0
+
+        if isinstance(k, int):
+            ind = np.argpartition(np.abs(x), -k, axis=None)[-k:]
+            ind = np.unravel_index(ind, _x.shape)
+            ind_del = np.ones_like(_x, dtype=bool)
+            ind_del[ind] = False
+            _x[ind_del] = 0
+        else:
+            ind_tmp = np.argpartition(np.abs(_x), kth=-k, axis=0)
+            ind_keep = np.ones_like(_x, dtype=bool)
+            for i in range(x.shape[1]):
+                ind_keep[ind_tmp[:-k[i],i],i] = False
+            _x[np.logical_not(ind_keep)] = 0
+            ind = np.where(ind_keep)
         return ind, _x
 
     def project_subspace(self, x, ind):
@@ -59,4 +68,4 @@ class Sparsity(Constraint):
         ind_del = np.ones(x.shape, dtype=bool)
         ind_del[ind] = False
         _x[ind_del] = 0
-        return x
+        return _x

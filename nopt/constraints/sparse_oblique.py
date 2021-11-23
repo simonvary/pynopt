@@ -13,6 +13,7 @@ support_projection(var)
 import numpy as np
 
 from nopt.constraints.constraint import Constraint
+from nopt.constraints.sparsity import Sparsity
 
 class SparseOblique(Constraint):
     """
@@ -22,6 +23,7 @@ class SparseOblique(Constraint):
     def __init__(self, sparsity):
         ''' k can be a positive int or a list'''
         self.sparsity = sparsity
+        self._HTs = Sparsity(self.sparsity)
 
     def project(self, x, sparsity=None):
         """
@@ -49,12 +51,7 @@ class SparseOblique(Constraint):
         """
         if sparsity is None:
             sparsity = self.sparsity
-        _x = x.copy()
-        ind = np.argpartition(np.abs(x), -sparsity, axis=None)[-sparsity:]
-        ind = np.unravel_index(ind, _x.shape)
-        ind_del = np.ones(_x.shape, dtype=bool)
-        ind_del[ind] = False
-        _x[ind_del] = 0
+        ind, _x = self._HTs.project(x, sparsity)
         col_norms = np.linalg.norm(_x, ord=2, axis=0)
         return (ind, _x / col_norms)
 
@@ -67,10 +64,6 @@ class SparseOblique(Constraint):
         ind : int
             where to keep entries
         """
-        # Check if support is of size k ? 
-        _x = x.copy()
-        ind_del = np.ones(x.shape, dtype=bool)
-        ind_del[ind] = False
-        _x[ind_del] = 0
+        _x = self._HTs.project_subspace(x, ind)
         col_norms = np.linalg.norm(_x, ord=2, axis=0)
         return (_x / col_norms)

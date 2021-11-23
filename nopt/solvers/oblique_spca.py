@@ -1,8 +1,7 @@
 import time
 import numpy as np
 from nopt.constraints.sparse_oblique import SparseOblique
-from nopt.constraints.rank import Rank
-from nopt.constraints.sparse import Sparse
+from nopt.constraints import FixedRank, Sparsity
 
 from nopt.solvers.solver import Solver
 import pdb
@@ -20,7 +19,7 @@ class ObliqueSPCA(Solver):
         return a/b
 
     def _compute_initial_guess(self, A, constraint, problem):
-        HTr = Rank(problem.rank)
+        HTr = FixedRank(problem.rank)
         subspaces,_ = HTr.project(A._matrix)
         _, x0 = constraint.project_quasi(subspaces[1])
         return (x0)
@@ -57,7 +56,7 @@ class ObliqueSPCA(Solver):
         n = np.prod(A.shape_input)
 
         if lam is None:
-            lam = n / r
+            lam = n
         
         regularizer = lambda x: .25*lam*np.linalg.norm(x.T @ x - np.eye(x.shape[1]),'fro')**2
         regularizer_gradient = lambda x: lam * x @ (x.T @ x - np.eye(x.shape[1]))
@@ -92,7 +91,7 @@ class ObliqueSPCA(Solver):
             iter_lsearch = 1
             while True:
                 subspace, x_new = self._take_step(x, alpha, -grad, HTso.project_quasi)
-
+                # HTso.project_quasi
                 s_new = x_new - x
                 objective_value_new = objective(x_new)
                 if objective_value - objective_value_new >= beta*( - np.dot(s_new.flatten(), grad.flatten())) or iter_lsearch > MAX_ITER_LSEARCH:
