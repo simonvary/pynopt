@@ -75,6 +75,7 @@ class Solver(metaclass=abc.ABCMeta):
         return reason
 
     def _start_optlog(self, solverparams=None, extraiterfields=None):
+        ''' Initialize dictionary for logging the iterations and tracking values'''
         if self._logverbosity <= 0:
             self._optlog = None
         else:
@@ -89,42 +90,33 @@ class Solver(metaclass=abc.ABCMeta):
                                                  self._minstepsize,
                                                  'maxcostevals':
                                                  self._maxcostevals},
-                            'solverparams': solverparams
+                            'solverparams': solverparams,
+                            'final_values': {}
                             }
+        
+        # If _log_verbosity >= 2 track individual iterations
         if self._logverbosity >= 2:
             self._optlog['iterations'] = {'iteration': [], 
                                             'time': [],
-                                            'fx': [],
-                                            'xdist': []}
+                                            'fx': []}
             if extraiterfields:
                 for field in extraiterfields:
                     self._optlog['iterations'][field] = []
 
-    def _append_optlog(self, iteration, fx, xdist, **kwargs):
-        # In case not every iteration is being logged
+    def _append_optlog(self, iteration, time0, fx, **kwargs):
+        ''' Append log of iterations and tracking values.'''
         self._optlog['iterations']['iteration'].append(iteration)
-        self._optlog['iterations']['time'].append(time.time())
+        self._optlog['iterations']['time'].append(time.time() - time0)
         self._optlog['iterations']['fx'].append(fx)
-        self._optlog['iterations']['xdist'].append(xdist)
         for key in kwargs:
-            del self._optlog['iterations']['xdist']
+            if kwargs[key] != None:
+                self._optlog['iterations'][key].append(kwargs[key])
 
-    def _stop_optlog(self, x, objective, stop_reason, time0,
-                     stepsize=float('inf'), gradnorm=float('inf'),
-                     iter=-1, costevals=-1):
-        self._optlog['stoppingreason'] = stop_reason
-        self._optlog['final_values'] = {'x': x,
-                                        'f(x)': objective,
+    def _stop_optlog(self, stop_reason, iteration, time0, fx, **kwargs): 
+        self._optlog['stop_reason'] = stop_reason
+        self._optlog['final_values'] = {'iteration': iteration,
+                                        'fx': fx,
                                         'time': time.time() - time0}
-        if self._optlog['iterations']['xdist'][0] == None:
-            None
-            # remove self._optlog['iterations']['xdist'][0]
-
-        if stepsize != float('inf'):
-            self._optlog['final_values']['stepsize'] = stepsize
-        if gradnorm != float('inf'):
-            self._optlog['final_values']['gradnorm'] = gradnorm
-        if iter != -1:
-            self._optlog['final_values']['iterations'] = iter
-        if costevals != -1:
-            self._optlog['final_values']['costevals'] = costevals
+        for key in kwargs:
+            if kwargs[key] != None:
+                self._optlog['final_values'][key] = kwargs[key]

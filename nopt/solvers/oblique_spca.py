@@ -18,10 +18,11 @@ class ObliqueSPCA(Solver):
         b = np.linalg.norm(A.matvec(gradient_proj))**2
         return a/b
 
-    def _compute_initial_guess(self, A, constraint, problem):
+    def _compute_initial_guess(self, A, problem):
         HTr = FixedRank(problem.rank)
+        HTso = SparseOblique(problem.sparsity)
         subspaces,_ = HTr.project(A._matrix)
-        _, x0 = constraint.project_quasi(subspaces[1])
+        _, x0 = HTso.project_quasi(subspaces[1])
         return (x0)
 
     def _take_step(self, x, alpha, direction, projection):
@@ -29,7 +30,7 @@ class ObliqueSPCA(Solver):
         subspace, x_new = projection(w_new)
         return(subspace, x_new)
     
-    def solve(self, problem, lam=None, x=None):
+    def solve(self, problem, lam=None, x0=None):
         """
         Perform optimization using gradient descent with linesearch.
         This method first computes the gradient (derivative) of obj
@@ -37,7 +38,7 @@ class ObliqueSPCA(Solver):
         steepest descent (which is the opposite direction to the gradient).
         Arguments:
             - problem (PrincipalSubspace)
-            - x=None
+            - x0=None
                 Optional parameter. Starting point. If none
                 then a starting point will be randomly generated.
             - stepsize_type = barmijo
@@ -58,11 +59,22 @@ class ObliqueSPCA(Solver):
         if lam is None:
             lam = n
         
+        if x0 is None:
+            x = self._compute_initial_guess(A, problem)
+
         regularizer = lambda x: .25*lam*np.linalg.norm(x.T @ x - np.eye(x.shape[1]),'fro')**2
         regularizer_gradient = lambda x: lam * x @ (x.T @ x - np.eye(x.shape[1]))
         
         objective = lambda x: problem.objective(x) + regularizer(x)
         gradient = lambda x: problem.gradient(x) + regularizer_gradient(x)
+        extraiterfields = ['gradnorm']
+        if problem.x_true is not None:
+            fx_true = problem.objective(problem.x_true)
+            extraiterfields.append('dist_fx_true')
+            extraiterfields.append('dist_x_true')
+        else:
+            dist_fx_true = None
+            dist_x_true = None
         
         MAX_ITER_LSEARCH = 100;
 
@@ -76,11 +88,10 @@ class ObliqueSPCA(Solver):
         if verbosity >= 2:
             print(" iter\t\t   obj. value\t    grad. norm")
 
-        self._start_optlog()
+        self._start_optlog(None, extraiterfields)
         stop_reason = None
         iter = 0
         time0 = time.time()
-        #pdb.set_trace()
         while True:
             # Calculate new cost, grad and gradnorm
             grad = gradient(x)
@@ -106,8 +117,15 @@ class ObliqueSPCA(Solver):
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
+            if problem.x_true is not None:
+                dist_fx_true = (objective_value - fx_true) / fx_true
+                dist_x_true = problem.distance_x_true(x)
+
             if self._logverbosity >= 2:
-                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
+                self._append_optlog(iter, time0, objective_value, 
+                                    gradnorm = gradnorm, 
+                                    dist_fx_true = dist_fx_true, 
+                                    dist_x_true = dist_x_true)
 
             stop_reason = self._check_stopping_criterion(
                 time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
@@ -122,7 +140,9 @@ class ObliqueSPCA(Solver):
         if self._logverbosity <= 0:
             return (subspace, x)
         else:
-            self._stop_optlog(x, objective(x), stop_reason, time0,
-                              stepsize=alpha, gradnorm=gradnorm,
-                              iter=iter)
+            self._stop_optlog(stop_reason, iter, time0, objective(x),
+                              stepsize=alpha, 
+                              gradnorm=gradnorm, 
+                              dist_fx_true = dist_fx_true, 
+                              dist_x_true = dist_x_true)
             return (subspace, x, self._optlog)

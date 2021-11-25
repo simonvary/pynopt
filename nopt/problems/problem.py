@@ -27,3 +27,8 @@ class Problem:
         self.x_true = x_true
         self.verbosity = verbosity
 
+    def distance_x_true(self, x):
+        '''
+        Compute distance to a true solution.
+        '''
+        pass
