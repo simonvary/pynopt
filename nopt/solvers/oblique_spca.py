@@ -22,7 +22,7 @@ class ObliqueSPCA(Solver):
         HTr = FixedRank(problem.rank)
         HTso = SparseOblique(problem.sparsity)
         subspaces,_ = HTr.project(A._matrix)
-        _, x0 = HTso.project_quasi(subspaces[1])
+        _, x0 = HTso.project(subspaces[1])
         return (x0)
 
     def _take_step(self, x, alpha, direction, projection):
@@ -101,7 +101,7 @@ class ObliqueSPCA(Solver):
             # line-search loop
             iter_lsearch = 1
             while True:
-                subspace, x_new = self._take_step(x, alpha, -grad, HTso.project_quasi)
+                subspace, x_new = self._take_step(x, alpha, -grad, HTso.project)
                 # HTso.project_quasi
                 s_new = x_new - x
                 objective_value_new = objective(x_new)

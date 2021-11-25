@@ -35,36 +35,35 @@ class GaussianSPCA(object):
                 convergence x will be the point at which it terminated.
     """
 
-    def __init__(self, verb = 2):
+    def __init__(self, verb = 1):
         self.verb = verb
         return None
 
-    def single_test(self, solve_func, n, rank, sparsity, num_samples, theta, track_fields = None):
+    def single_test(self, solve_func, n, rank, sparsity, num_samples, theta, track_fields = None, seed = None):
+        if seed is not None:
+            np.random.seed(seed)
+        
         if track_fields is None:
             track_fields = ['fx', 'iteration', 'time', 
                             'dist_fx_true', 'dist_x_true']
 
         # Generate the sparse subspace
-        if self.verb == 2:
+        if self.verb >= 2:
             print('Generating q0.')
         subspace0, q0 = GenerateQSMat1((n,rank), sparsity)
         # Sample the distribution
-        if self.verb == 2:
+        if self.verb >= 2:
             print('Sampling the distribution q0.')
         samples = np.random.multivariate_normal(np.zeros((n,)), 
                                                     np.eye(n) + theta * q0 @ q0.T, num_samples).T
         # Construct the correlation matrix
-        if self.verb == 2:
-            print('Constructing the covariance operator.')
+        if self.verb >= 2:
+            print('Constructing the SparseSubspace problem.')
         A = LinearMatrix(samples @ samples.T / num_samples)
-
-        # Create the problem object
-        if self.verb == 2:
-            print('Constructing the covariance operator.')
         problem = SparsePrincipalSubspace(A, rank = rank, sparsity=sparsity, 
                                             verbosity = 0, x_true = q0)
         
-        if self.verb == 2:
+        if self.verb >= 2:
             print('Solving the problem.')
         subspace, x, opt_log = solve_func(problem)
 
@@ -72,7 +71,7 @@ class GaussianSPCA(object):
         for key in track_fields:
             track_values[key] = opt_log['final_values'][key]
 
-        if self.verb == 2:
+        if self.verb >= 1:
             print('Problem solved in %d iterations.' % len(opt_log['iterations']['iteration']))
         return opt_log, track_values, problem
 

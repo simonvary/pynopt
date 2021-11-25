@@ -3,7 +3,7 @@ import numpy as np
 from nopt.constraints import Sparsity
 
 
-def GenerateQSMat1(size, sparsity, tol = 1e-16, MAX_ITER = 20):
+def GenerateQSMat1(size, sparsity, tol = 1e-16, MAX_ITER = 20, verb = 0):
     """
     Generate low-rank plus sparse matrix
     Attributes:
@@ -25,6 +25,7 @@ def GenerateQSMat1(size, sparsity, tol = 1e-16, MAX_ITER = 20):
         delta = np.linalg.norm(q0_new - q0, 'fro')/np.linalg.norm(q0, 'fro')
         q0[:] = q0_new[:]
         iter = iter + 1
-    print(delta)
-    print(np.max(np.abs(q0.transpose() @ q0) - np.eye(size[1])))
+    if verb >= 1:
+        print(delta)
+        print(np.max(np.abs(q0.transpose() @ q0) - np.eye(size[1])))
     return (subspace, q0)
