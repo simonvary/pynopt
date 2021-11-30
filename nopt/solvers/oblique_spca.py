@@ -102,7 +102,6 @@ class ObliqueSPCA(Solver):
             iter_lsearch = 1
             while True:
                 subspace, x_new = self._take_step(x, alpha, -grad, HTso.project)
-                # HTso.project_quasi
                 s_new = x_new - x
                 objective_value_new = objective(x_new)
                 if objective_value - objective_value_new >= beta*( - np.dot(s_new.flatten(), grad.flatten())) or iter_lsearch > MAX_ITER_LSEARCH:

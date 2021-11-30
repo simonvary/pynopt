@@ -8,6 +8,7 @@ such that it is also sparse.
 
 import itertools
 
+import pandas as pd  
 import numpy as np
 
 from nopt.benchmarks import GenerateQSMat1
@@ -39,13 +40,21 @@ class GaussianSPCA(object):
         self.verb = verb
         return None
 
-    def single_test(self, solve_func, n, rank, sparsity, num_samples, theta, track_fields = None, seed = None):
+    def single_test(self, solve_func, params, track_fields = None, seed = None):
         if seed is not None:
             np.random.seed(seed)
         
         if track_fields is None:
             track_fields = ['fx', 'iteration', 'time', 
                             'dist_fx_true', 'dist_x_true']
+
+        n = params['n']
+        rank = params['rank']
+        alpha = params['alpha']
+        num_samples = params['num_samples']
+        theta = params['theta']
+
+        sparsity = np.round(alpha*n*rank).astype(int).item()
 
         # Generate the sparse subspace
         if self.verb >= 2:
@@ -75,17 +84,26 @@ class GaussianSPCA(object):
             print('Problem solved in %d iterations.' % len(opt_log['iterations']['iteration']))
         return opt_log, track_values, problem
 
-    def batch_test(self, solver, n, ranks, sparsities, num_samples, thetas, seed = 123):
-        np.random.seed(seed)
-        params_list = itertools.product(n, ranks, sparsities, num_samples, thetas)
-        final_values = {}
-        for params in params_list:
-            n = params[0]
-            rank = params[1]
-            sparsity = params[2]
-            num_samples = params[3]
-            theta = params[4]
-            
-            _, track_values, _ = self.single_test(self, solver, n, rank, sparsity, num_samples, theta)
-            final_values[params] = track_values
+
+    def grid_test(self, solver_func, params_list, repetitions = 1, track_fields = None, seed = None):
+        if seed is not None:
+            np.random.seed(seed)
+
+        if track_fields is None:
+            track_fields = ['fx', 'iteration', 'time', 
+                            'dist_fx_true', 'dist_x_true']
+
+        test_results = pd.DataFrame(columns=list(params_list.keys()) + track_fields)
+
+        for param_value in itertools.product(*params_list.values()):
+            param_dict = dict(zip(params_list.keys(), param_value))
+            _, track_values, _ = self.single_test(solver_func, param_dict, track_fields = track_fields, seed = None)
+
+            for field in track_fields:
+                param_dict[field] = track_values[field]
+
+            test_results = test_results.append(param_dict, ignore_index=True)
+
+        return(test_results)
+
 
