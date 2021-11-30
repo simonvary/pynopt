@@ -17,7 +17,7 @@ from nopt.problems import SparsePrincipalSubspace
 
 class GaussianSPCA(object):
     """
-        Perform a set of benchmark on syntetically generated data.
+        Perform a set of benchmarks on syntetically generated data.
         The model:
             X_i~Normal(0,1, eye(n) + theta*q_0 @ q_0.T )
             N-samples
