@@ -43,8 +43,8 @@ class Solver(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def solve(self, problem, x=None):
         '''
-        Solve the given :py:class:`pyNonOpt.core.problem.Problem` (starting
-        from a random initial guess if the optional argument x is not
+        Solve the given :py:class:`pynopt.core.problem.Problem` (starting
+        from a _compute_initial_guess if the optional argument x is not
         provided).
         '''
         pass

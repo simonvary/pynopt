@@ -12,12 +12,6 @@ class ObliqueSPCA(Solver):
         super().__init__(*args, **kwargs)
         pass
 
-    def _compute_stepsize(self, gradient, subspace, A, constraint):
-        gradient_proj = constraint.project_subspace(gradient, subspace)
-        a = np.linalg.norm(gradient_proj)**2
-        b = np.linalg.norm(A.matvec(gradient_proj))**2
-        return a/b
-
     def _compute_initial_guess(self, A, problem):
         HTr = FixedRank(problem.rank)
         HTso = SparseOblique(problem.sparsity)
@@ -61,13 +55,16 @@ class ObliqueSPCA(Solver):
         
         if x0 is None:
             x = self._compute_initial_guess(A, problem)
-
+        else:
+            x = x0
+        
         regularizer = lambda x: .25*lam*np.linalg.norm(x.T @ x - np.eye(x.shape[1]),'fro')**2
         regularizer_gradient = lambda x: lam * x @ (x.T @ x - np.eye(x.shape[1]))
         
         objective = lambda x: problem.objective(x) + regularizer(x)
         gradient = lambda x: problem.gradient(x) + regularizer_gradient(x)
-        extraiterfields = ['gradnorm']
+
+        extraiterfields = ['gradnorm', 'iter_lsearch', 'stepsize']
         if problem.x_true is not None:
             fx_true = problem.objective(problem.x_true)
             extraiterfields.append('dist_fx_true')
@@ -86,7 +83,7 @@ class ObliqueSPCA(Solver):
 
         objective_value = objective(x)
         if verbosity >= 2:
-            print(" iter\t\t   obj. value\t    grad. norm")
+            print(" iter\t\t   obj. value\t    grad. norm\t     iter. lsearch\t     stepsize")
 
         self._start_optlog(None, extraiterfields)
         stop_reason = None
@@ -98,7 +95,6 @@ class ObliqueSPCA(Solver):
             gradnorm = np.linalg.norm(grad, 2)
 
             alpha = alpha_bar
-            # line-search loop
             iter_lsearch = 1
             while True:
                 subspace, x_new = self._take_step(x, alpha, -grad, HTso.project)
@@ -114,7 +110,7 @@ class ObliqueSPCA(Solver):
 
             iter = iter + 1
             if verbosity >= 2:
-                print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
+                print("%5d\t%+.16e\t%.8e \t %5d \t\t\t %2.4e" % (iter, objective_value, gradnorm, iter_lsearch, alpha))
 
             if problem.x_true is not None:
                 dist_fx_true = (objective_value - fx_true) / fx_true
@@ -123,6 +119,8 @@ class ObliqueSPCA(Solver):
             if self._logverbosity >= 2:
                 self._append_optlog(iter, time0, objective_value, 
                                     gradnorm = gradnorm, 
+                                    iter_lsearch = iter_lsearch,
+                                    stepsize = alpha,
                                     dist_fx_true = dist_fx_true, 
                                     dist_x_true = dist_x_true)
 

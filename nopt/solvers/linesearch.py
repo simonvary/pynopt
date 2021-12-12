@@ -12,16 +12,18 @@ class LineSearchBackTracking:
         self.contraction_factor = contraction_factor
         self.suff_decrease = suff_decrease
         self.MAX_ITER = MAX_ITER
+
+        # Possible to reuse old values as a start
         self._oldf0 = None
 
-    def search(self, objective, x, direction, projection):
+    def search(self, objective, take_step, alpha_0):
         """
         Function to perform backtracking line-search.
         Arguments:
-            - objective
-                objective function to optimise
+            - function_line
+                Objective function with 1 parameter 
             - x
-                starting point on the manifold
+                starting point
             - projection
                 projection on the constraint)
         Returns:
@@ -30,3 +32,14 @@ class LineSearchBackTracking:
             - newx
                 next iterate suggested by the line-search
         """
+
+        alpha = self.alpha_bar
+        iter_lsearch = 1
+        while True:
+            subspace, x_new = self._take_step(x, alpha, -grad, HTso.project)
+            s_new = x_new - x
+            objective_value_new = objective(x_new)
+            if objective_value - objective_value_new >= beta*( - np.dot(s_new.flatten(), grad.flatten())) or iter_lsearch > MAX_ITER_LSEARCH:
+                break
+            alpha = alpha * tau
+            iter_lsearch = iter_lsearch + 1

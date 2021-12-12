@@ -40,7 +40,7 @@ class GaussianSPCA(object):
         self.verb = verb
         return None
 
-    def single_test(self, solve_func, params, track_fields = None, seed = None):
+    def single_test(self, solver, params, track_fields = None, seed = None):
         if seed is not None:
             np.random.seed(seed)
         
@@ -74,7 +74,7 @@ class GaussianSPCA(object):
         
         if self.verb >= 2:
             print('Solving the problem.')
-        subspace, x, opt_log = solve_func(problem)
+        subspace, x, opt_log = solver.solve(problem)
 
         track_values = {}
         for key in track_fields:
@@ -85,7 +85,7 @@ class GaussianSPCA(object):
         return opt_log, track_values, problem
 
 
-    def grid_test(self, solver_func, params_list, repetitions = 1, track_fields = None, seed = None):
+    def grid_test(self, solver, params_list, repetitions = 1, track_fields = None, seed = None):
         if seed is not None:
             np.random.seed(seed)
 
@@ -97,7 +97,7 @@ class GaussianSPCA(object):
 
         for param_value in itertools.product(*params_list.values()):
             param_dict = dict(zip(params_list.keys(), param_value))
-            _, track_values, _ = self.single_test(solver_func, param_dict, track_fields = track_fields, seed = None)
+            _, track_values, _ = self.single_test(solver, param_dict, track_fields = track_fields, seed = None)
 
             for field in track_fields:
                 param_dict[field] = track_values[field]

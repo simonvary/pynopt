@@ -1,6 +1,6 @@
 
 
-# Pynopt
+# Pynopt StructOpt
 
 This repository includes simple implementations for certain non-smooth, non-convex optimisation problems arising in data processing. Exemplar applications include:
 - compressed sensing
@@ -21,3 +21,9 @@ Some things to keep in mind:
     - readily availibility to use [curvelops](https://github.com/PyLops/curvelops), wavelets, etc.
 - use syntax close to the PyProximal for non-smooth proximal operators?
 - use syntax close to scikit.learn for solvers?
+
+### Requirements
+- numpy (1.21.3)
+- pandas (1.3.4)
+- pymanopt (0.2.5)
+- scikit-learn (1.0.1)

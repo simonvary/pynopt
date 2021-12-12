@@ -12,15 +12,10 @@ import pdb
 
 class LandingField(Solver):
 
-    def __init__(self, linesearch='normalized', *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, stepsize_type='safeguard', *args, **kwargs):
+        super().__init__(minobjective_value=-inf, *args, **kwargs)
+        self.stepsize_type = stepsize_type
         pass
-
-    def _compute_stepsize(self, gradient, subspace, A, constraint):
-        gradient_proj = constraint.project_subspace(gradient, subspace)
-        a = np.linalg.norm(gradient_proj)**2
-        b = np.linalg.norm(A.matvec(gradient_proj))**2
-        return a/b
 
     def _compute_initial_guess(self, A, constraint, problem):
         HTr = FixedRank(problem.rank)
@@ -70,20 +65,25 @@ class LandingField(Solver):
         
         objective = lambda x: problem.objective(x)
         
+
         MAX_ITER_LSEARCH = 100;
+        alpha_bar = 1
+        tau = 0.5
+        beta = 1e-4
 
         eta = inf
-        HTso = SparseOblique(s)
+        HTso = Sparsity(s)
+
+        extraiterfields = ['gradnorm', 'regnorm', 'iter_lsearch']
+        self._start_optlog(None, extraiterfields)
 
         objective_value = objective(x)
         if verbosity >= 2:
-            print(" iter\t\t   obj. value\t    grad. norm\t    reg. norm")
+            print(" iter\t\t   obj. value\t    grad. norm\t    reg. norm\t iter. lsearch")
 
-        self._start_optlog()
         stop_reason = None
         iter = 0
         time0 = time.time()
-        #pdb.set_trace()
         while True:
             # Calculate new cost, grad and gradnorm
             projected_gradient = manifold.proj(x, problem.gradient(x))
@@ -92,21 +92,41 @@ class LandingField(Solver):
             # Calculate safe step-size
             regnorm = regularizer(x)
             gradnorm = np.linalg.norm(projected_gradient, 'fro')
-            eta_new = self._safe_stepsize(gradnorm, regnorm, lam=lam, epsilon=epsilon)
-            eta = min(eta, eta_new)
             
-            step_direction = projected_gradient + lam*regularization_gradient
-            subspace, x_new = self._take_step(x, eta, -step_direction, HTso.project_quasi)
-            
+            # Compute the landing field step-direction
+            step_direction = -(projected_gradient + lam*regularization_gradient)
+
+            if self.stepsize_type == 'safeguard':
+                # Compute the safe-guard value for eta_new
+                eta_new = self._safe_stepsize(gradnorm, regnorm, lam=lam, epsilon=epsilon)
+                eta = min(eta, eta_new)
+                subspace, x_new = self._take_step(x, eta, step_direction, HTso.project)
+                iter_lsearch = 1
+            elif self.stepsize_type == 'barmijo':
+                # Apply line-search with backtracking Armijo
+                alpha = alpha_bar
+                iter_lsearch = 1
+                while True:
+                    subspace, x_new = self._take_step(x, alpha, step_direction, HTso.project)
+                    s_new = x_new - x
+                    objective_value_new = objective(x_new)
+                    decrease_cond = (objective_value - objective_value_new >= beta*( - np.dot(s_new.flatten(), step_direction.flatten())))
+                    safeguard_cond = (4*regularizer(x_new) <= epsilon)
+                    if (decrease_cond and safeguard_cond) or iter_lsearch > MAX_ITER_LSEARCH:
+                        break
+                    alpha = alpha * tau
+                    iter_lsearch = iter_lsearch + 1
             x = x_new
             objective_value = objective(x)
-
+            #epsilon = 4*regularizer(x_new)
             iter = iter + 1
             if verbosity >= 2:
-                print("%5d\t%+.16e\t%.8e\t%.8e" % (iter, objective_value, gradnorm, regnorm))
+                print("%5d\t%+.16e\t%.8e\t%.8e\t%5d" % (iter, objective_value, gradnorm, regnorm, iter_lsearch))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, objective_value, xdist = None)
+                self._append_optlog(iter, time0, objective_value, 
+                                    gradnorm = gradnorm, 
+                                    regnorm = regnorm)
 
             stop_reason = self._check_stopping_criterion(
                 time0, iter=iter, objective_value=objective_value, stepsize=eta, gradnorm=gradnorm)
@@ -121,7 +141,8 @@ class LandingField(Solver):
         if self._logverbosity <= 0:
             return (subspace, x)
         else:
-            self._stop_optlog(x, objective(x), stop_reason, time0,
-                              stepsize=eta, gradnorm=gradnorm,
-                              iter=iter)
+            self._stop_optlog(stop_reason, iter, time0, objective(x),
+                              stepsize=eta, 
+                              gradnorm=gradnorm,
+                              regnorm=regnorm)
             return (subspace, x, self._optlog)
