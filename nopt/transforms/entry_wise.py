@@ -10,7 +10,7 @@ import numpy as np
 
 from nopt.transforms.transform import Transform
 from scipy.sparse.linalg import LinearOperator 
-
+from scipy.sparse import coo_matrix
 
 class EntryWise(Transform):
     """
@@ -18,23 +18,23 @@ class EntryWise(Transform):
 
     # should take the scipy LinearOperator for inheritence
     """  
-    def __init__(self, ind, *args, **kwargs):
+    def __init__(self, mask, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._ind = ind
+
+        self._mask = mask
+        # or dia = mask.reshape(-1).astype('float').tolist()
+        # subsample2 = sparse.diags(dia)
 
         if self.shape_input == None:
-            self.shape_input = (matrix.shape[0], 1)
+            self.shape_input = mask.shape
         if self.shape_output == None:
-            self.shape_output= (matrix.shape[1], 1)
+            self.shape_output= mask.sum()
 
     # Function to apply the transform.
     def matvec(self, x):
         # change x from the self.shape_input to a vector
-        _x = x.copy()
-        ind_del = np.ones(x.shape, dtype=bool)
-        ind_del[self._ind] = False
-        _x[ind_del] = 0
-        return _x
+        #
+        return x[self._mask].reshape(-1,1)
 
     # Function to apply adjoint/backward transform.
     def rmatvec(self, y):

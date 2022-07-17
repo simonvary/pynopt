@@ -63,7 +63,7 @@ class NIHT(Solver):
             subspace, _ = constraint.project(x)
 
         if verbosity >= 2:
-            print(" iter\t\t   obj. value\t    grad. norm")
+            print(" iter\t\t   obj. value\t    grad. norm\t     xdist")
 
         self._start_optlog()
         stop_reason = None
@@ -75,20 +75,19 @@ class NIHT(Solver):
             objective_value = objective(x)
             iter = iter + 1
 
-            grad = problem.gradient(x)#A.rmatvec(A.matvec(x) - b)
+            grad = problem.gradient(x)
             gradnorm = np.linalg.norm(grad, 2)
             alpha = self._compute_stepsize(grad, subspace, A, constraint)
-            
+
             #w = x - alpha * grad
             #subspace, x = constraint.project(w)
-            subspace, x = self._take_step(x, alpha, -grad, constraint.projection)
+            subspace, x = self._take_step(x, alpha, -grad, constraint.project)
 
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
-
+                self._append_optlog(iter, time0, objective_value) # gradnorm=gradnorm
             stop_reason = self._check_stopping_criterion(
                 time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
 
@@ -97,11 +96,11 @@ class NIHT(Solver):
                     print(stop_reason)
                     print('')
                 break
-        
+
         if self._logverbosity <= 0:
             return x
         else:
-            self._stop_optlog(x, objective(x), stop_reason, time0,
+            self._stop_optlog(iter, time0, objective(x), stop_reason,
                               stepsize=alpha, gradnorm=gradnorm,
                               iter=iter)
             return x, self._optlog

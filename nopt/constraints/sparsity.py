@@ -52,7 +52,7 @@ class Sparsity(Constraint):
                 ind_keep[ind_tmp[:-k[i],i],i] = False
             _x[np.logical_not(ind_keep)] = 0
             ind = np.where(ind_keep)
-        return ind, _x
+        return np.sort(ind[0]), _x
 
     def project_subspace(self, x, ind):
         """

@@ -98,7 +98,8 @@ class Solver(metaclass=abc.ABCMeta):
         if self._logverbosity >= 2:
             self._optlog['iterations'] = {'iteration': [], 
                                             'time': [],
-                                            'fx': []}
+                                            'fx': [],
+                                            'xdist': []}
             if extraiterfields:
                 for field in extraiterfields:
                     self._optlog['iterations'][field] = []
@@ -112,7 +113,7 @@ class Solver(metaclass=abc.ABCMeta):
             if kwargs[key] != None:
                 self._optlog['iterations'][key].append(kwargs[key])
 
-    def _stop_optlog(self, stop_reason, iteration, time0, fx, **kwargs): 
+    def _stop_optlog(self, iteration, time0, fx, stop_reason, **kwargs): 
         self._optlog['stop_reason'] = stop_reason
         self._optlog['final_values'] = {'iteration': iteration,
                                         'fx': fx,
