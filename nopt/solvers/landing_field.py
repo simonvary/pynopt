@@ -2,7 +2,7 @@ import time
 from math import inf, sqrt
 import numpy as np
 
-from pymanopt.manifolds import Stiefel
+#from pymanopt.manifolds import Stiefel
 
 from nopt.constraints.sparse_oblique import SparseOblique
 from nopt.constraints import FixedRank, Sparsity
