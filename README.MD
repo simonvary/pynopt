@@ -22,6 +22,11 @@ Some things to keep in mind:
 - use syntax close to the PyProximal for non-smooth proximal operators?
 - use syntax close to scikit.learn for solvers?
 
+### Todo:
+- masks
+- entrywise subsampling
+- unit tests
+
 ### Requirements
 - numpy (1.21.3)
 - pandas (1.3.4)
