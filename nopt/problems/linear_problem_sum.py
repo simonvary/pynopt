@@ -14,6 +14,7 @@ class LinearProblemSum(Problem):
         - A
             A linear operator going from R^{m\times n} to R^p
             If none given, an identity is assumed
+            Can be a list of the same length as constraints. Nones will be turned into identity mappings.
         - b
             A right-hand side in R^p
         - cost
@@ -29,17 +30,43 @@ class LinearProblemSum(Problem):
             Gradient of the cost in x
     """
 
-    def __init__(self, A, b, constraints, *args, **kwargs):
+    def __init__(self, A, b, constraints,  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if A is None:
-            def A(x):
-                return x        
-        self.A = A
+        self._num_components = len(constraints)
+
+        if type(A) is tuple:
+            self.A = []
+            for i in range(self._num_components):
+                if A[i] is None:
+                    class Ai(object):
+                        def __init__(self):
+                            pass
+                        def matvec(self, x):
+                            return x
+                        def rmatvec(self, y):
+                            return y
+                else:
+                    Ai = A[i]
+                self.A.append(Ai)
+            self.A = tuple(self.A)
+        else:
+            if A is None:
+                class Ai(object):
+                    def __init__(self):
+                        pass
+                    def matvec(self, x):
+                        return x
+                    def rmatvec(self, y):
+                        return y
+            self.A = (A,) * self._num_components
         self.b = b
         # check that there are at least two constraints
         self.constraints = constraints
     
     def objective(self, x):
         # Least squares cost
-        return .5*np.linalg.norm(self.A.matvec(x) - self.b, 2)**2
+        Ax = np.empty_like(self.b)
+        for i in range(self._num_components):
+            Ax += self.A[i].matvec(x[i])
+        return .5*np.linalg.norm(Ax - self.b, 2)**2

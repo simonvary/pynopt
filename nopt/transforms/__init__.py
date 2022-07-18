@@ -1,11 +1,11 @@
 __all__ = [
     "FastJLT",
-    "LinearMatrix",
-    "EntryWise"
+    "EntryWise",
+    "TensorLinearOperator",
   #  "Wavelet2"
 ]
 
 from .fast_jlt import FastJLT
-from .linear_transform import LinearMatrix
 from .entry_wise import EntryWise
+from .tensor_linear_operator import TensorLinearOperator
 #from .wavelet2 import Wavelet2

@@ -49,29 +49,29 @@ class Solver(metaclass=abc.ABCMeta):
         '''
         pass
 
-    def _check_stopping_criterion(self, time0, iter=-1, objective_value=float('inf'), 
+    def _check_stopping_criterion(self, running_time, iter=-1, objective_value=float('inf'), 
                                     reldecrease = 1, gradnorm=float('inf'), 
                                     stepsize=float('inf'), costevals=-1):
         reason = None
-        if time.time() >= time0 + self._maxtime:
+        if running_time >= self._maxtime:
             reason = ("Terminated - max time reached after %d iterations."
                       % iter)
         elif iter >= self._maxiter:
             reason = ("Terminated - max iterations reached after "
-                      "%.2f seconds." % (time.time() - time0))
+                      "%.2f seconds." % running_time)
         elif objective_value < self._minobjective_value:
             reason = ("Terminated - target objective reached after "
-                      "%.2f seconds." % (time.time() - time0))
+                      "%.2f seconds." % running_time)
         elif gradnorm < self._mingradnorm:
             reason = ("Terminated - min grad norm reached after %d "
                       "iterations, %.2f seconds." % (
-                          iter, (time.time() - time0)))
+                          iter, running_time))
         elif stepsize < self._minstepsize:
             reason = ("Terminated - min stepsize reached after %d iterations, "
-                      "%.2f seconds." % (iter, (time.time() - time0)))
+                      "%.2f seconds." % (iter, running_time))
         elif costevals >= self._maxcostevals:
             reason = ("Terminated - max cost evals reached after "
-                      "%.2f seconds." % (time.time() - time0))
+                      "%.2f seconds." % running_time)
         return reason
 
     def _start_optlog(self, solverparams=None, extraiterfields=None):
@@ -104,20 +104,20 @@ class Solver(metaclass=abc.ABCMeta):
                 for field in extraiterfields:
                     self._optlog['iterations'][field] = []
 
-    def _append_optlog(self, iteration, time0, fx, **kwargs):
+    def _append_optlog(self, iteration, running_time, fx, **kwargs):
         ''' Append log of iterations and tracking values.'''
         self._optlog['iterations']['iteration'].append(iteration)
-        self._optlog['iterations']['time'].append(time.time() - time0)
+        self._optlog['iterations']['time'].append(running_time)
         self._optlog['iterations']['fx'].append(fx)
         for key in kwargs:
             if kwargs[key] != None:
                 self._optlog['iterations'][key].append(kwargs[key])
 
-    def _stop_optlog(self, iteration, time0, fx, stop_reason, **kwargs): 
+    def _stop_optlog(self, iteration, running_time, fx, stop_reason, **kwargs): 
         self._optlog['stop_reason'] = stop_reason
         self._optlog['final_values'] = {'iteration': iteration,
                                         'fx': fx,
-                                        'time': time.time() - time0}
+                                        'time': running_time}
         for key in kwargs:
             if kwargs[key] != None:
                 self._optlog['final_values'][key] = kwargs[key]

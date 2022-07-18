@@ -12,16 +12,19 @@ support_projection(var)
 import numpy as np
 
 from nopt.constraints.constraint import Constraint
+from sklearn.utils.extmath import randomized_svd
+
 
 class FixedRank(Constraint):
     """
     Projections based on matrix rank
     """
 
-    def __init__(self, r):
+    def __init__(self, r, randomized=True):
         self.r = r
-
-    def project(self, x, r=None):
+        self.randomized=randomized 
+        
+    def project(self, x, r=None, randomized=None):
         """
         Keep only k largest entries of x.
         Parameters
@@ -36,7 +39,13 @@ class FixedRank(Constraint):
         """
         if r is None:
             r = self.r
-        U, S, V = np.linalg.svd(x)
+        if randomized is None:
+            randomized = self.randomized
+
+        if randomized:
+            U, S, V = randomized_svd(x, n_components=r, random_state=None)
+        else:
+            U, S, V = np.linalg.svd(x, full_matrices=False)
         V = V.transpose()
         S = np.diag(S[:r])    
         U = U[:,:r]

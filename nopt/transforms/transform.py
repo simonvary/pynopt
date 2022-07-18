@@ -1,5 +1,5 @@
 import abc
-import time
+from scipy.sparse.linalg import LinearOperator
 
 class Transform(metaclass=abc.ABCMeta):
     '''

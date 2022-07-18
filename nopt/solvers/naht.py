@@ -21,9 +21,11 @@ class NAHT(Solver):
         return a/b
 
     def _compute_initial_guess(self, A, b, constraints):
-        w = A.rmatvec(b)
-        T_1, x1 = constraints[0].project(w)
-        T_2, x2 = constraints[1].project(w - x1) 
+        w1 = A[0].rmatvec(b)
+        T_1, x1 = constraints[0].project(w1)
+        w2 = A[1].rmatvec(b - A[0].matvec(x1))
+        T_2, x2 = constraints[1].project(w2) 
+        #T_2, x2 = constraints[1].project(w - x1) 
         return [[T_1, T_2], [x1, x2]]
 
     def solve(self, problem, x=None):
@@ -67,42 +69,39 @@ class NAHT(Solver):
         iter = 0
         time0 = time.time()
 
-        if verbosity >= 2:
-            print(" iter\t\t   cost val\t    grad. norm")
-
         while True:
             # Calculate new cost, grad and gradnorm
             # objective_value = objective(x[0] + x[1])
             iter = iter + 1
 
             # gradient step for the first component
-            grad = A.rmatvec(A.matvec(x[0] + x[1]) - b)
+            grad = A[0].rmatvec(A[0].matvec(x[0]) + A[1].matvec(x[1]) - b)
             gradnorm = np.linalg.norm(grad, 2)
-            alpha = self._compute_stepsize(grad, subspaces[0], A, constraints[0])
+            alpha = self._compute_stepsize(grad, subspaces[0], A[0], constraints[0])
             v = x[0] - alpha * grad
             temp_subspace, temp_x = constraints[0].project(v)
             subspaces[0] = temp_subspace
             x[0] = temp_x
 
             # gradient step for the second component
-            grad = A.rmatvec(A.matvec(x[0] + x[1]) - b)
+            grad = A[1].rmatvec(A[0].matvec(x[0]) + A[1].matvec(x[1]) - b)
             gradnorm = np.linalg.norm(grad, 2)
-            alpha = self._compute_stepsize(grad, subspaces[1], A, constraints[1])
+            alpha = self._compute_stepsize(grad, subspaces[1], A[1], constraints[1])
             w = x[1] - alpha * grad
             temp_subspace, temp_x = constraints[1].project(w)
             subspaces[1] = temp_subspace
             x[1] = temp_x
 
-            objective_value = objective(x[0] + x[1])
-
+            objective_value = objective(x)
+            running_time = time.time() - time0
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
+                self._append_optlog(iter, running_time, objective_value, xdist = None) # gradnorm=gradnorm
 
             stop_reason = self._check_stopping_criterion(
-                time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
+                running_time, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
 
             if stop_reason:
                 if verbosity >= 1:
@@ -114,7 +113,7 @@ class NAHT(Solver):
         if self._logverbosity <= 0:
             return x
         else:
-            self._stop_optlog(x[0] + x[1], objective(x[0] + x[1]), stop_reason, time0,
+            self._stop_optlog(x[0] + x[1], objective(x), stop_reason, running_time,
                               stepsize=alpha, gradnorm=gradnorm,
                               iter=iter)
             return x, self._optlog
