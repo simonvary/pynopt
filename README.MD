@@ -26,8 +26,7 @@ $$ \min_{x} \big\| \sum_{i}A_i(x_i) - b \big\|_2\qquad \mathrm{s.t.}\quad x_i \i
 
 Solvers: NAHT
 
-
-### Requirements
+## Requirements
 - numpy (1.21.3)
 - pandas (1.3.4)
 - scikit-learn (1.0.1)
