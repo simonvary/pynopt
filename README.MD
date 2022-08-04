@@ -13,7 +13,7 @@ The goal is to write a algorithms for a unified treatment of the above to be use
 ### LinearProblem
 Solve
 
-$$ \min_{x} \big\| A(x) - b \big\|_2\qquad \mathrm{s.t.}\quad x \in C$$
+$$ \min_{x} \| A(x) - b \|_2\qquad \mathrm{s.t.}\quad x \in C$$
 
 where $C$ can be a sparse set or a fixed rank set, and $A$ is a linear operator from [pylops](https://github.com/PyLops/pylops) or [scipy's LinearOperator class](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.LinearOperator.html).
 
