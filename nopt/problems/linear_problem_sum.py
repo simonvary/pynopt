@@ -66,7 +66,7 @@ class LinearProblemSum(Problem):
     
     def objective(self, x):
         # Least squares cost
-        Ax = np.empty_like(self.b)
+        Ax = np.zeros_like(self.b)
         for i in range(self._num_components):
             Ax += self.A[i].matvec(x[i])
         return .5*np.linalg.norm(Ax - self.b, 2)**2

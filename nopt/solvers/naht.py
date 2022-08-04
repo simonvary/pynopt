@@ -7,7 +7,9 @@ from nopt.solvers.solver import Solver
 class NAHT(Solver):
     """r
     Normalized Alternating Hard Thresholding 
-    
+
+    https://arxiv.org/pdf/2007.09457.pdf
+
     """
 
     def __init__(self, linesearch='normalized', *args, **kwargs):
@@ -33,10 +35,7 @@ class NAHT(Solver):
         Normalized Alternating Hard Thresholding for a recovery of an additive combination of two nonconvex sets 
         Arguments:
             - problem
-                Nopt problem setup using the Problem class, this must
-                have a .manifold attribute specifying the manifold to optimize
-                over, as well as a cost and enough information to compute
-                the gradient of that cost.
+                Nopt problem setup using the Problem class
             - x=None
                 Optional parameter. Starting point. If none
                 then a starting point will be computed from A.rmatvec(b).
