@@ -34,8 +34,7 @@ class NAHT(Solver):
         """
         Normalized Alternating Hard Thresholding for a recovery of an additive combination of two nonconvex sets 
         Arguments:
-            - problem
-                Nopt problem setup using the Problem class
+            - problem (LinearProblemSum)
             - x=None
                 Optional parameter. Starting point. If none
                 then a starting point will be computed from A.rmatvec(b).
