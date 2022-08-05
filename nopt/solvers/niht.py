@@ -33,11 +33,7 @@ class NIHT(Solver):
         w.r.t. arg, and then optimizes by moving in the direction of
         steepest descent (which is the opposite direction to the gradient).
         Arguments:
-            - problem
-                Pymanopt problem setup using the Problem class, this must
-                have a .manifold attribute specifying the manifold to optimize
-                over, as well as a cost and enough information to compute
-                the gradient of that cost.
+            - problem (LinearProblem)
             - x=None
                 Optional parameter. Starting point. If none
                 then a starting point will be randomly generated.
@@ -50,7 +46,6 @@ class NIHT(Solver):
                 convergence x will be the point at which it terminated.
         """
 
-        # Check the problem is LinearLeastSquares type
         constraint = problem.constraint
         objective = problem.objective
         A = problem.A
@@ -72,7 +67,6 @@ class NIHT(Solver):
 
         while True:
             # Calculate new cost, grad and gradnorm
-            objective_value = objective(x)
             iter = iter + 1
 
             grad = problem.gradient(x)
@@ -83,13 +77,18 @@ class NIHT(Solver):
             #subspace, x = constraint.project(w)
             subspace, x = self._take_step(x, alpha, -grad, constraint.project)
 
+
+            objective_value = objective(x)
+            running_time = time.time() - time0
+
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, time0, objective_value) # gradnorm=gradnorm
+                self._append_optlog(iter, running_time, objective_value)
+            
             stop_reason = self._check_stopping_criterion(
-                time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
+                running_time, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
 
             if stop_reason:
                 if verbosity >= 1:

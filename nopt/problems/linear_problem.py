@@ -34,7 +34,7 @@ class LinearProblem(Problem):
 
         if A is None:
             def A(x):
-                return x        
+                return x  
         self.A = A
         self.b = b
         self.constraint = constraint

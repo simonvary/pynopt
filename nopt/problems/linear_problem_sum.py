@@ -6,6 +6,7 @@ object to feed to one of the solvers.
 import numpy as np
 
 from nopt.problems.problem import Problem
+from nopt.transforms.identity import Identity
 
 class LinearProblemSum(Problem):
     """
@@ -39,27 +40,13 @@ class LinearProblemSum(Problem):
             self.A = []
             for i in range(self._num_components):
                 if A[i] is None:
-                    class Ai(object):
-                        def __init__(self):
-                            pass
-                        def matvec(self, x):
-                            return x
-                        def rmatvec(self, y):
-                            return y
+                    self.A.append(Identity())
                 else:
-                    Ai = A[i]
-                self.A.append(Ai)
+                    self.A.append(A[i])
             self.A = tuple(self.A)
         else:
             if A is None:
-                class Ai(object):
-                    def __init__(self):
-                        pass
-                    def matvec(self, x):
-                        return x
-                    def rmatvec(self, y):
-                        return y
-            self.A = (A,) * self._num_components
+                self.A = (Identity(),) * self._num_components
         self.b = b
         # check that there are at least two constraints
         self.constraints = constraints
