@@ -30,3 +30,16 @@ Solvers: NAHT
 - numpy (1.21.3)
 - pandas (1.3.4)
 - scikit-learn (1.0.1)
+
+
+## Citation
+```
+@misc{Tanner2020compressed,
+  author = {Tanner, Jared and Vary, Simon},  
+  title = {Compressed sensing of low-rank plus sparse matrices},
+  url = {https://arxiv.org/abs/2007.09457},
+  publisher = {arXiv},
+  year = {2020},
+}
+```
+
