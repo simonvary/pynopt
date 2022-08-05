@@ -113,7 +113,6 @@ class NAHT(Solver):
         if self._logverbosity <= 0:
             return x
         else:
-            self._stop_optlog(x[0] + x[1], objective(x), stop_reason, running_time,
-                              stepsize=alpha, gradnorm=gradnorm,
-                              iter=iter)
+            self._stop_optlog(iter, objective(x), stop_reason, running_time,
+                              stepsize=alpha, gradnorm=gradnorm)
             return x, self._optlog

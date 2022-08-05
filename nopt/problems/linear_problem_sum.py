@@ -36,7 +36,7 @@ class LinearProblemSum(Problem):
 
         self._num_components = len(constraints)
 
-        if type(A) is tuple:
+        if type(A) is tuple or type(A) is list:
             self.A = []
             for i in range(self._num_components):
                 if A[i] is None:
@@ -47,6 +47,8 @@ class LinearProblemSum(Problem):
         else:
             if A is None:
                 self.A = (Identity(),) * self._num_components
+            else:
+                self.A = (A, ) * self._num_components
         self.b = b
         # check that there are at least two constraints
         self.constraints = constraints

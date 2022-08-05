@@ -20,11 +20,12 @@ class FixedRank(Constraint):
     Projections based on matrix rank
     """
 
-    def __init__(self, r, randomized=True):
+    def __init__(self, r, matrix_shape, randomized=True):
         self.r = r
-        self.randomized=randomized 
+        self.randomized = randomized
+        self.matrix_shape = matrix_shape
         
-    def project(self, x, r=None, randomized=None):
+    def project(self, x, r=None):
         """
         Keep only k largest entries of x.
         Parameters
@@ -39,18 +40,19 @@ class FixedRank(Constraint):
         """
         if r is None:
             r = self.r
-        if randomized is None:
-            randomized = self.randomized
+            
+        randomized = self.randomized
+        shape = self.matrix_shape
 
         if randomized:
-            U, S, V = randomized_svd(x, n_components=r, random_state=None)
+            U, S, V = randomized_svd(x.reshape(shape), n_components=r, random_state=None)
         else:
-            U, S, V = np.linalg.svd(x, full_matrices=False)
+            U, S, V = np.linalg.svd(x.reshape(shape), full_matrices=False)
         V = V.transpose()
         S = np.diag(S[:r])    
         U = U[:,:r]
         V = V[:,:r]
-        return (U, V), np.matmul(U, np.matmul(S, V.transpose()))
+        return (U, V), np.matmul(U, np.matmul(S, V.transpose())).flatten()
 
 
     def project_subspace(self, x, subspaces):
@@ -64,7 +66,8 @@ class FixedRank(Constraint):
         """
         U = subspaces[0]
         V = subspaces[1]
-        return np.matmul(U, np.matmul(U.transpose(), x))
+        shape = self.matrix_shape
+        return np.matmul(U, np.matmul(U.transpose(), x.reshape(shape))).flatten()
 
     def project_subspace_right(self, x, subspaces):
         """
