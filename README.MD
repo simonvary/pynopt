@@ -5,7 +5,7 @@ This repository includes simple numpy implementations for some non-smooth, non-c
 * matrix completion/sensing
 * robust low-rank estimation (Robust PCA)
 
-The goal is to write a algorithms for a unified treatment of the above to be used in a number of applications, such as [video seperation](https://github.com/simonvary/pynopt/blob/master/examples/example_video.ipynb), multispectral imaging, [exoplanet detection](https://github.com/simonvary/pynopt/blob/master/examples/example_exoplanet.ipynb), image [inpainting](https://github.com/simonvary/pynopt/blob/master/examples/example_image_inpainting.ipynb), and others.
+The goal is to write a algorithms for a unified treatment of the above to be used in a number of applications, such as [video seperation](https://github.com/simonvary/pynopt/blob/master/examples/example_video.ipynb), multispectral imaging, [exoplanet detection](https://github.com/simonvary/pynopt/blob/master/examples/example_exoplanet.ipynb), [image inpainting](https://github.com/simonvary/pynopt/blob/master/examples/example_image_inpainting.ipynb), and others.
 
 
 ## Problem classes

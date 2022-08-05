@@ -1,5 +1,4 @@
 import abc
-from scipy.sparse.linalg import LinearOperator
 
 class Transform(metaclass=abc.ABCMeta):
     '''
@@ -16,8 +15,6 @@ class Transform(metaclass=abc.ABCMeta):
                 Shape of the numpy array input
             - shape_output (array)
                 Shape of the numpy array output
-            
-            # Question: how expensive is it to change shapes in numpy?
         """
         self._verbosity = verbosity
         self.shape_input = shape_input

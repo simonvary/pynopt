@@ -50,7 +50,7 @@ class NIHT(Solver):
         objective = problem.objective
         A = problem.A
         b = problem.b
-        verbosity = problem.verbosity
+        verbosity = self._verbosity
 
         if x is None:
             subspace, x = self._compute_initial_guess(A, b, constraint)
@@ -76,7 +76,6 @@ class NIHT(Solver):
             #w = x - alpha * grad
             #subspace, x = constraint.project(w)
             subspace, x = self._take_step(x, alpha, -grad, constraint.project)
-
 
             objective_value = objective(x)
             running_time = time.time() - time0

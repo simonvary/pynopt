@@ -50,7 +50,8 @@ class NAHT(Solver):
         objective = problem.objective
         A = problem.A
         b = problem.b
-        verbosity = problem.verbosity
+        
+        verbosity = self._verbosity
 
         # x is now a tuple x = (x1, x2)
 
@@ -92,6 +93,7 @@ class NAHT(Solver):
 
             objective_value = objective(x)
             running_time = time.time() - time0
+
             if verbosity >= 2:
                 print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
 

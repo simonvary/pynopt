@@ -8,7 +8,7 @@ class Solver(metaclass=abc.ABCMeta):
     Method list:
     '''
 
-    def __init__(self, maxtime=1000, maxiter=1000, minobjective_value=1e-8, minreldecrease=1-1e-3, mingradnorm=1e-8, minstepsize=1e-10,  maxcostevals=float('inf'), logverbosity=1):
+    def __init__(self, maxtime=1000, maxiter=1000, minobjective_value=1e-8, minreldecrease=1-1e-3, mingradnorm=1e-8, minstepsize=1e-10,  maxcostevals=float('inf'), verbosity=1, logverbosity=1):
         """
         Variable attributes (defaults in brackets):
             - maxtime (1000)
@@ -22,9 +22,9 @@ class Solver(metaclass=abc.ABCMeta):
                 this.
             - maxcostevals (Inf)
                 Maximum number of allowed cost evaluations
-            - logverbosity (0)
-                Level of information logged by the solver while it operates,
-                0 is silent, 2 is most information.
+            - verbosity, logverbosity (0)
+                Level of information displayed (logged) by the solver while 
+                it operates, 0 is silent, 2 is most information.
         """
 
         self._maxtime = maxtime
@@ -34,6 +34,7 @@ class Solver(metaclass=abc.ABCMeta):
         self._mingradnorm = mingradnorm
         self._minstepsize = minstepsize
         self._maxcostevals = maxcostevals
+        self._verbosity = verbosity
         self._logverbosity = logverbosity
         self._optlog = None
 
@@ -74,6 +75,9 @@ class Solver(metaclass=abc.ABCMeta):
                       "%.2f seconds." % running_time)
         return reason
 
+    def _print_verbosity(self):
+        pass
+
     def _start_optlog(self, solverparams=None, extraiterfields=None):
         ''' Initialize dictionary for logging the iterations and tracking values'''
         if self._logverbosity <= 0:
@@ -94,8 +98,8 @@ class Solver(metaclass=abc.ABCMeta):
                             'final_values': {}
                             }
         
-        # If _log_verbosity >= 2 track individual iterations
-        if self._logverbosity >= 2:
+        # If _log_verbosity >= 1 track individual iterations
+        if self._logverbosity >= 1:
             self._optlog['iterations'] = {'iteration': [], 
                                             'time': [],
                                             'fx': [],
