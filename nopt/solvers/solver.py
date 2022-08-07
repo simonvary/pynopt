@@ -1,4 +1,5 @@
 import abc
+from email import iterators
 import time
 
 
@@ -8,7 +9,7 @@ class Solver(metaclass=abc.ABCMeta):
     Method list:
     '''
 
-    def __init__(self, maxtime=1000, maxiter=1000, minobjective_value=1e-8, minreldecrease=1-1e-3, mingradnorm=1e-8, minstepsize=1e-10,  maxcostevals=float('inf'), verbosity=1, logverbosity=1):
+    def __init__(self, maxtime=1000, maxiter=1000, minobjective_value=1e-8, minreldecrease=1-1e-3, minreldecrease_shift = 15, mingradnorm=1e-8, minstepsize=1e-10,  maxcostevals=float('inf'), verbosity=1, logverbosity=1):
         """
         Variable attributes (defaults in brackets):
             - maxtime (1000)
@@ -31,6 +32,7 @@ class Solver(metaclass=abc.ABCMeta):
         self._maxiter = maxiter
         self._minobjective_value = minobjective_value
         self._minreldecrease = minreldecrease
+        self._minreldecrease_shift = minreldecrease_shift
         self._mingradnorm = mingradnorm
         self._minstepsize = minstepsize
         self._maxcostevals = maxcostevals
@@ -50,8 +52,8 @@ class Solver(metaclass=abc.ABCMeta):
         '''
         pass
 
-    def _check_stopping_criterion(self, running_time, iter=-1, objective_value=float('inf'), 
-                                    reldecrease = 1, gradnorm=float('inf'), 
+    def _check_stopping_criterion(self, running_time, 
+                                    iter=-1,objective_value=float('inf'), gradnorm=float('inf'), 
                                     stepsize=float('inf'), costevals=-1):
         reason = None
         if running_time >= self._maxtime:
@@ -65,6 +67,12 @@ class Solver(metaclass=abc.ABCMeta):
                       "%.2f seconds." % running_time)
         elif gradnorm < self._mingradnorm:
             reason = ("Terminated - min grad norm reached after %d "
+                      "iterations, %.2f seconds." % (
+                          iter, running_time))
+        elif (self._logverbosity >= 1 and 
+            iter > self._minreldecrease_shift and 
+            (objective_value / self._optlog['iterations']['fx'][iter-self._minreldecrease_shift])**(self._minreldecrease_shift**-1) > self._minreldecrease):
+            reason = ("Terminated - min relative decrease reached after %d "
                       "iterations, %.2f seconds." % (
                           iter, running_time))
         elif stepsize < self._minstepsize:
@@ -96,9 +104,8 @@ class Solver(metaclass=abc.ABCMeta):
                                                  self._maxcostevals},
                             'solverparams': solverparams,
                             'final_values': {}
-                            }
-        
-        # If _log_verbosity >= 1 track individual iterations
+                            }     
+        # If _log_verbosity >= 2 track individual iterations
         if self._logverbosity >= 1:
             self._optlog['iterations'] = {'iteration': [], 
                                             'time': [],
