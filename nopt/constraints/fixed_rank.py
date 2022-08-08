@@ -25,7 +25,7 @@ class FixedRank(Constraint):
         self.randomized = randomized
         self.matrix_shape = matrix_shape
         
-    def project(self, x, r=None):
+    def project(self, x, r=None, factorized = False):
         """
         Keep only k largest entries of x.
         Parameters
@@ -52,7 +52,11 @@ class FixedRank(Constraint):
         S = np.diag(S[:r])    
         U = U[:,:r]
         V = V[:,:r]
-        return (U, V), np.matmul(U, np.matmul(S, V.transpose())).flatten()
+        if factorized:
+            S_sqrt = np.sqrt(S)
+            return (U, V), [U @ S_sqrt, S_sqrt@V.T]
+        else:
+            return (U, V), np.matmul(U, np.matmul(S, V.transpose())).flatten()
 
 
     def project_subspace(self, x, subspaces):

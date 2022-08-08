@@ -73,9 +73,8 @@ class NIHT(Solver):
             gradnorm = np.linalg.norm(grad, 2)
             alpha = self._compute_stepsize(grad, subspace, A, constraint)
 
-            #w = x - alpha * grad
-            #subspace, x = constraint.project(w)
-            subspace, x = self._take_step(x, alpha, -grad, constraint.project)
+            w = x - alpha * grad
+            subspace, x = constraint.project(w)
 
             objective_value = objective(x)
             running_time = time.time() - time0

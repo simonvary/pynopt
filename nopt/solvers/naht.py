@@ -58,7 +58,7 @@ class NAHT(Solver):
         if x is None:
             subspaces, x = self._compute_initial_guess(A, b, constraints)
         else:
-            subspaces, _ = constraints.project(x) # broken now
+            subspaces, _ = constraints.project(x)
 
         if verbosity >= 2:
             print(" iter\t\t   obj. value\t    grad. norm")

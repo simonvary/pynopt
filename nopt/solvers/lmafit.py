@@ -8,33 +8,30 @@ Created on Tue March 1 2022
 
 import time
 import numpy as np
+from nopt.solvers.solver import Solver
 
 class LMaFit(Solver):
     """r
-    LMaFit: Low-Rank Matrix Fitting
-
-    http://lmafit.blogs.rice.edu
+        Based on a pseudocode provided in:
+            Tanner, Wei. Low rank matrix completion by alternating steepest descent methods. ACHA 2016 
+            https://www.sciencedirect.com/science/article/pii/S1063520315001062' 
     """
     
-    def __init__(self, linesearch='normalized', *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         pass
     
-    def _compute_initial_guess(self, A, b, constraints):
+    def _compute_initial_guess(self, A, b, constraint):
         w = A.rmatvec(b)
-        T_1, x1 = constraints[0].project(w)
-        T_2, x2 = constraints[1].project(w - x1) 
-        return [[T_1, T_2], [x1, x2]]
+        T_k, x = constraint.project(w, factorized = True)
+        return (T_k, x)
 
     def solve(self, problem, x=None):
         """
         LMaFit for the recovery of low-rank matrix
         Arguments:
             - problem
-                Nopt problem setup using the Problem class, this must
-                have a .manifold attribute specifying the manifold to optimize
-                over, as well as a cost and enough information to compute
-                the gradient of that cost.
+                Nopt problem setup LinearProblem with FixedRank constraint
             - x=None
                 Optional parameter. Starting point. If none
                 then a starting point will be computed from A.rmatvec(b).
@@ -45,24 +42,26 @@ class LMaFit(Solver):
             - optlog
         """
 
-        # Check the problem is LinearProblemSum type
+        # Check the problem is LinearProblem with FixedRank constraint
         constraint = problem.constraint
         objective = problem.objective
-        lambda_x = problem.lambda_x
-        lambda_x = problem.lambda_y
-        eye = np.eye(constraint.r)
+        #lambda_x = problem.lambda_x
+        #lambda_x = problem.lambda_y
+        #eye = np.eye(constraint.r)
 
         A = problem.A
         b = problem.b
-        verbosity = problem.verbosity
+        verbosity = self._verbosity
 
-        # x is now a tuple x = (x1, x2)
 
+        # x is now a tuple x = (x, yh) and low-rank = x@yh
         if x is None:
-            subspaces, x = self._compute_initial_guess(A, b, constraints)
+            subspaces, x = self._compute_initial_guess(A, b, constraint)
         else:
-            subspaces, _ = constraints.project(x) # broken now
+            subspaces, _ = constraint.project(x)
 
+        if verbosity >= 1:
+            print(" Starting")
         if verbosity >= 2:
             print(" iter\t\t   obj. value\t    grad. norm")
 
@@ -70,33 +69,32 @@ class LMaFit(Solver):
         stop_reason = None
         iter = 0
         time0 = time.time()
-
-        if verbosity >= 2:
-            print(" iter\t\t   cost val\t    grad. norm")
-
+        z = x[0] @ x[1]
         while True:
             # Calculate new cost, grad and gradnorm
-            # objective_value = objective(x[0] + x[1])
             iter = iter + 1
 
+            z.flatten()[A._mask] = b
+
             # Least squares for X
-            Xt = np.linalg.solve(Y@Y.T + lambda_x*eye, Y@Z.T)
+            x[0] = np.linalg.solve(x[1]@x[1].T, x[1]@z.T).T
             
             # Least squares for Y
-            Y = np.linalg.solve(Xt@X + lambda_y*eye, Xt@Z)
+            x[1] = np.linalg.solve(x[0].T@x[0], x[0].T@z)
 
-            Z = Xt.T @ Y
+            z = x[0] @ x[1]
 
-            objective_value = objective(Z)
+            objective_value = objective(z.flatten())
+            running_time = time.time() - time0
 
             if verbosity >= 2:
-                print("%5d\t%+.16e\t%.8e" % (iter, objective_value, gradnorm))
+                print("%5d\t%+.16e\t%.8e" % (iter, objective_value, 0))
 
             if self._logverbosity >= 2:
-                self._append_optlog(iter, objective_value, xdist = None) # gradnorm=gradnorm
+                self._append_optlog(iter, running_time, objective_value)
 
             stop_reason = self._check_stopping_criterion(
-                time0, iter=iter, objective_value=objective_value, stepsize=alpha, gradnorm=gradnorm)
+                running_time, iter=iter, objective_value=objective_value)
 
             if stop_reason:
                 if verbosity >= 1:
@@ -106,60 +104,10 @@ class LMaFit(Solver):
 
         
         if self._logverbosity <= 0:
-            return x
+            return z
         else:
-            self._stop_optlog(x[0] + x[1], objective(x[0] + x[1]), stop_reason, time0,
-                              stepsize=alpha, gradnorm=gradnorm,
-                              iter=iter)
-            return x, self._optlog
-
-def lmafit2(mat, mask, rank, maxit=50, kappa = 1-1e-4, tol_res_error = 1e-6):
-    '''
-        Based on a pseudocode provided in:
-            Tanner, Wei. Low rank matrix completion by alternating steepest descent methods. ACHA 2016 
-            https://www.sciencedirect.com/science/article/pii/S1063520315001062' 
-
-        mat is a matrix with known entries on the mask
-        mask be the boolean matrix with True for known values
-
-        Xt.T @ Y = Z
-        Xt is X transposed
-    '''
-
-    b = mat[mask] # The vector of observed entries
-    
-    m, n = mat.shape
-    
-    # Default conditioning to machine precision times max(m,n)
-    tol_rank = -1 # default conditioning to machine precision times max(m,n)
-
-    Z = np.zeros((m,n))
-    Z[mask] = b
-    Z[~mask] = b.mean()
-    
-    # Initialization
-    _, S, Vh = randomized_svd(Z,rank, random_state = None)
-    Y = np.diag(S)  @ Vh
-
-    rel_error = np.zeros((maxit+1,1))
-    rel_error_kappa = -1 # only computed in iteration 15
-    iter = 0
-    while True:
-        Xt, _, _, _ = np.linalg.lstsq(Y.T, Z.T, rcond = tol_rank)
-        Y, _, _, _ = np.linalg.lstsq(Xt.T, Z, rcond = tol_rank)
-        Z = Xt.T @ Y
-
-        rel_error[iter] = np.linalg.norm(Z[mask]-b, 2) / np.linalg.norm(b, 2)
-
-        if iter>=15:
-            rel_error_kappa = (rel_error[iter] / rel_error[iter-15])**(1/15)
-
-        if (iter >= maxit) or (rel_error[iter] <= tol_res_error) or (rel_error_kappa > kappa)  : 
-            break
-        else:
-            Z[mask] = b
-            iter = iter + 1
-
-    rel_error = rel_error[:iter]
-
-    return Xt.T@Y, rel_error, None
+            self._stop_optlog(iter, time0, 
+                    objective((x[0] @ x[1]).flatten()), 
+                    stop_reason, 
+                    iter=iter)
+            return z, self._optlog

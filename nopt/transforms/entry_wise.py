@@ -23,3 +23,11 @@ class EntryWise(LinearOperator):
         _x = np.zeros(self.shape[1], dtype = self.dtype)
         _x[self._mask] = y
         return _x
+
+    def project(self, y):
+        '''
+            fill in the entries of a zero matrix of a shape
+        '''
+        _x = np.zeros(self.shape[1], dtype = self.dtype)
+        _x[self._mask] = y
+        return _x
