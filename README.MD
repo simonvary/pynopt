@@ -22,7 +22,7 @@ Solvers: NIHT
 ### LinearProblemSum
 Solve the linear combination
 
-$$ \min_{x} \big\| \sum_{i}^{n}A_i(x_i) - b \big\|_2\qquad \mathrm{s.t.}\quad x_i \in C_i$$
+$$ \min_{x} \big\lVert \sum_{i}^{n}A_i(x_i) - b \big\rVert_2\qquad \mathrm{s.t.}\quad x_i \in C_i$$
 
 Solvers: NAHT
 
