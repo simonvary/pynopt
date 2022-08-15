@@ -1,6 +1,6 @@
 # Pynopt
 
-This repository includes simple numpy implementations for some non-smooth, non-convex optimisation problems arising in data processing, such as
+Simple numpy implementations for some non-smooth, non-convex optimisation problems arising in data processing, such as
 * compressed sensing
 * matrix completion/sensing
 * robust low-rank estimation (Robust PCA)
