@@ -8,9 +8,9 @@ class EntryWise(LinearOperator):
     """
     Entry-wise transform on a sparse mask
     """  
-    def __init__(self, shape, mask, dtype = None, *args, **kwargs):
+    def __init__(self, mask, size, dtype = None, *args, **kwargs):
         # check that shape[0] == len(mask)
-        super().__init__(dtype, shape, *args, **kwargs)
+        super().__init__(dtype, (len(mask), size), *args, **kwargs)
         self._mask = mask
 
     def _matvec(self, x):
