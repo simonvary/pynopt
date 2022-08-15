@@ -3,7 +3,6 @@ import numpy as np
 
 from nopt.solvers.solver import Solver
 
-
 class NAHT(Solver):
     """r
     Normalized Alternating Hard Thresholding 
@@ -25,9 +24,8 @@ class NAHT(Solver):
     def _compute_initial_guess(self, A, b, constraints):
         w1 = A[0].rmatvec(b)
         T_1, x1 = constraints[0].project(w1)
-        w2 = A[1].rmatvec(b - A[0].matvec(x1))
+        w2 = A[1].rmatvec(A[0].matvec(x1)-b)
         T_2, x2 = constraints[1].project(w2) 
-        #T_2, x2 = constraints[1].project(w - x1) 
         return [[T_1, T_2], [x1, x2]]
 
     def solve(self, problem, x=None):
@@ -58,7 +56,9 @@ class NAHT(Solver):
         if x is None:
             subspaces, x = self._compute_initial_guess(A, b, constraints)
         else:
-            subspaces, _ = constraints.project(x)
+            subspaces = [None, None]
+            subspaces[0], _ = constraints[0].project(x[0])
+            subspaces[1], _ = constraints[1].project(x[1])
 
         if verbosity >= 2:
             print(" iter\t\t   obj. value\t    grad. norm")

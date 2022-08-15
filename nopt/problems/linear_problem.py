@@ -6,6 +6,7 @@ object to feed to one of the solvers.
 import numpy as np
 
 from nopt.problems.problem import Problem
+from nopt.transforms.identity import Identity
 
 class LinearProblem(Problem):
     """
@@ -33,9 +34,9 @@ class LinearProblem(Problem):
         super().__init__(*args, **kwargs)
 
         if A is None:
-            def A(x):
-                return x  
-        self.A = A
+            self.A = Identity()
+        else:
+            self.A = A
         self.b = b
         self.constraint = constraint
     
