@@ -28,7 +28,7 @@ class NAHT(Solver):
         T_2, x2 = constraints[1].project(w2) 
         return [[T_1, T_2], [x1, x2]]
 
-    def solve(self, problem, x=None):
+    def solve(self, problem, x0=None):
         """
         Normalized Alternating Hard Thresholding for a recovery of an additive combination of two nonconvex sets 
         Arguments:
@@ -53,9 +53,10 @@ class NAHT(Solver):
 
         # x is now a tuple x = (x1, x2)
 
-        if x is None:
+        if x0 is None:
             subspaces, x = self._compute_initial_guess(A, b, constraints)
         else:
+            x = x0.copy()
             subspaces = [None, None]
             subspaces[0], _ = constraints[0].project(x[0])
             subspaces[1], _ = constraints[1].project(x[1])

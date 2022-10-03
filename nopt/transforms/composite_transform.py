@@ -1,29 +1,25 @@
-"""
-..
-    2022, Simon Vary
-Module providing basic 2D transforms
-A.forward is supposed to go from 2D matrix domain to a vector of coeffs
-A.backward goes from coeffs to a matrix
-Routine listings
-----------------
-wavelet2(method)
-    2D wavelet transform.
-"""
+import numpy as np
 
-class CompositeTransform(object):
+from nopt.transforms.transform import Transform
+from scipy.sparse.linalg import LinearOperator
+
+
+class CompositeTransform(LinearOperator):
     '''
-    Takes a list of transforms that will be applied in sequence.
+    Takes a list of transforms that will be applied in a sequence.
     '''
-    def __init__(self, As, **kwargs):
+    def __init__(self, As, dtype=None, *args, **kwargs):
+        super().__init__(dtype, shape=(As[-1].shape[0], As[0].shape[1]), *args, **kwargs)
         self._As = As
+        self._n_transforms = len(As)
 
-    def matvec(self, x):
+    def _matvec(self, x):
         y = x.copy()
         for A in self._As:
             y = A.matvec(y)
         return y
 
-    def rmatvec(self, y):
+    def _rmatvec(self, y):
         x = y.copy()
         for A in reversed(self._As):
             x = A.rmatvec(x)
