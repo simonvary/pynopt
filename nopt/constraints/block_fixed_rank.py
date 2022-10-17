@@ -13,6 +13,14 @@ from sklearn.utils.extmath import randomized_svd
 class BlockFixedRank(Constraint):
     """
     Projections based on matrix rank
+    block_regions is a list of lists of lists, each entry is a single block, e.g.:
+        blocks = (
+            ((1,2,3), (2,3,5)), 
+            ((4,5,6), (1,2,5))
+        )
+        a single block is a collection of column and row indices.
+
+        Single pair (row_ind, col_ind) should be present only once.
     """
 
     def __init__(self, block_regions, ranks, matrix_shape, randomized=True):
@@ -43,17 +51,18 @@ class BlockFixedRank(Constraint):
         y_matrix = np.zeros_like(x_matrix)
         sing_vectors = []
 
-        for r, region in zip(ranks, block_regions):
-            matrix_region = x_matrix[:,region]
+        for r, (region_row, region_col) in zip(ranks, block_regions):
+            matrix_region = np.ix_(region_row, region_col)
+            #matrix_region = x_matrix[region_row,:][:,region_col]
             if randomized:
-                U, S, V = randomized_svd(matrix_region, n_components=r, random_state=None)
+                U, S, V = randomized_svd(x_matrix[matrix_region], n_components=r, random_state=None)
             else:
-                U, S, V = np.linalg.svd(matrix_region, full_matrices=False)
+                U, S, V = np.linalg.svd(x_matrix[matrix_region], full_matrices=False)
             V = V.transpose()
             S = np.diag(S[:r])    
             U = U[:,:r]
             V = V[:,:r]
-            y_matrix[:,region] = np.matmul(U, np.matmul(S, V.transpose()))
+            y_matrix[matrix_region] = np.matmul(U, np.matmul(S, V.transpose()))
             sing_vectors.append((U, V))
         return (block_regions, sing_vectors), y_matrix.flatten()
 
@@ -70,8 +79,8 @@ class BlockFixedRank(Constraint):
         x_matrix = x.reshape(self.matrix_shape)
         y_matrix = np.zeros_like(x_matrix)
 
-        for region, (U,V) in zip(*subspaces):
-            y_matrix[:,region] = np.matmul(U, np.matmul(U.transpose(), x_matrix[:,region]))
+        for (region_row, region_col), (U,V) in zip(*subspaces):
+            y_matrix[region_row,region_col] = np.matmul(U, np.matmul(U.transpose(), x_matrix[region_row,region_col]))
         return y_matrix.flatten()
 
     def project_subspace_right(self, x, subspaces):
