@@ -80,7 +80,8 @@ class BlockFixedRank(Constraint):
         y_matrix = np.zeros_like(x_matrix)
 
         for (region_row, region_col), (U,V) in zip(*subspaces):
-            y_matrix[region_row,region_col] = np.matmul(U, np.matmul(U.transpose(), x_matrix[region_row,region_col]))
+            matrix_region = np.ix_(region_row, region_col)
+            y_matrix[matrix_region] = np.matmul(U, np.matmul(U.transpose(), x_matrix[matrix_region]))
         return y_matrix.flatten()
 
     def project_subspace_right(self, x, subspaces):

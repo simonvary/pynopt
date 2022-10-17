@@ -7,13 +7,17 @@ class GroupSparsity(Constraint):
     Projections of tensors based on group sparsity
     """
 
-    def __init__(self, groups, ks):
+    def __init__(self, groups, ks, positive = False):
         '''
             ind_list is a list of lists
             k is a list of sparsities for each index group
         '''
         self.groups = groups
-        self.ks = ks
+        if isinstance(ks, int):
+            self.ks = [ks] * len(groups)
+        else:
+            self.ks = ks
+        self.positive = positive
 
     def project(self, x, groups=None, ks=None):
         """
@@ -32,19 +36,28 @@ class GroupSparsity(Constraint):
         if ks is None:
             ks = self.ks
         
-        _x = x.copy()
+        if isinstance(ks, int):
+            self.ks = [ks] * len(groups)
+        else:
+            self.ks = ks
+
+        _x = np.zeros_like(x)
         inds = np.zeros_like(x,dtype=bool)
+
 
         for (group, k) in zip(groups, ks):
             x_group = x[group]
             _x_group = _x[group]
             inds_group = inds[group]
-            ind = np.argpartition(np.abs(x_group), -k, axis=None)[-k:]
-            ind = np.unravel_index(ind, _x.shape)
-            ind_del = np.ones(len(group), dtype=bool)
-            ind_del[ind] = False
-            _x_group[ind_del] = 0
-            inds_group[ind[0]] = True
+            if self.positive:
+                ind = np.argpartition(x_group, -k, axis=None)[-k:]
+            else:
+                ind = np.argpartition(np.abs(x_group), -k, axis=None)[-k:]
+            #ind = np.unravel_index(ind, _x.shape)
+            #ind_del = np.ones_like(x_group, dtype=bool)
+            #ind_del[ind] = False
+            _x_group[ind] = x_group[ind]
+            inds_group[ind] = True
             _x[group] = _x_group
             inds[group] = inds_group
 
