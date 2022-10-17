@@ -15,7 +15,7 @@ class GroupSparsity(Constraint):
         self.groups = groups
         self.ks = ks
 
-    def project(self, x, k=None):
+    def project(self, x, groups=None, ks=None):
         """
         Keep only k largest entries of x.
         Parameters
@@ -27,24 +27,28 @@ class GroupSparsity(Constraint):
         Notes
         -----
         """
-        if k is None:
-            k = self.k
+        if groups is None:
+            groups = self.groups
+        if ks is None:
+            ks = self.ks
+        
         _x = x.copy()
+        inds = np.zeros_like(x,dtype=bool)
 
-        if isinstance(k, int):
-            ind = np.argpartition(np.abs(x), -k, axis=None)[-k:]
+        for (group, k) in zip(groups, ks):
+            x_group = x[group]
+            _x_group = _x[group]
+            inds_group = inds[group]
+            ind = np.argpartition(np.abs(x_group), -k, axis=None)[-k:]
             ind = np.unravel_index(ind, _x.shape)
-            ind_del = np.ones_like(_x, dtype=bool)
+            ind_del = np.ones(len(group), dtype=bool)
             ind_del[ind] = False
-            _x[ind_del] = 0
-        else:
-            ind_tmp = np.argpartition(np.abs(_x), kth=-k, axis=0)
-            ind_keep = np.ones_like(_x, dtype=bool)
-            for i in range(x.shape[1]):
-                ind_keep[ind_tmp[:-k[i],i],i] = False
-            _x[np.logical_not(ind_keep)] = 0
-            ind = np.where(ind_keep)
-        return np.sort(ind[0]), _x
+            _x_group[ind_del] = 0
+            inds_group[ind[0]] = True
+            _x[group] = _x_group
+            inds[group] = inds_group
+
+        return inds, _x
 
     def project_subspace(self, x, ind):
         """
