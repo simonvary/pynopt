@@ -22,7 +22,7 @@ Solvers: NIHT
 ### LinearProblemSum
 Solve the linear combination
 
-$$ \min_{x} \big\lVert A_1(x_1) + A_2(x_2)  - b \big\rVert_2\qquad \mathrm{s.t.}\quad x_i \in C_i$$
+$$ \min_{x_i} \big\lVert A_1(x_1) + A_2(x_2)  - b \big\rVert_2\qquad \mathrm{s.t.}\quad x_i \in C_i$$
 
 Solvers: NAHT
 
