@@ -26,7 +26,7 @@ class NIHT(Solver):
         subspace, x_new = projection(w)
         return(subspace, x_new)
 
-    def solve(self, problem, x=None):
+    def solve(self, problem, x0=None):
         """
         Perform optimization using gradient descent with linesearch.
         This method first computes the gradient (derivative) of obj
@@ -52,9 +52,10 @@ class NIHT(Solver):
         b = problem.b
         verbosity = self._verbosity
 
-        if x is None:
+        if x0 is None:
             subspace, x = self._compute_initial_guess(A, b, constraint)
         else:
+            x = x0.copy()
             subspace, _ = constraint.project(x)
 
         if verbosity >= 2:
