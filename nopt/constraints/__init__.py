@@ -5,7 +5,8 @@ __all__ = [
     "BlockFixedRank",
     "Sparsity",
     "PositiveSparsity",
-    "GroupSparsity"
+    "GroupSparsity",
+    "JointConstraint"
 ]
 
 from .euclidean import Euclidean
@@ -15,3 +16,4 @@ from .block_fixed_rank import BlockFixedRank
 from .sparsity import Sparsity
 from .positive_sparsity import PositiveSparsity
 from .group_sparsity import GroupSparsity
+from .joint_constraint import JointConstraint
